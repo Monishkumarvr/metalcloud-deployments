@@ -1,0 +1,5 @@
+# Implemented by metalcloud-edge; this file documents it, nothing parses it.
+name: docker-jetson-v1
+unit: metalcloud-app.service   # runs /opt/metalcloud/bin/run-current
+launcher: docker compose -p metalcloud-<site> up --remove-orphans
+health_gate: every required service healthy on two consecutive polls, no restarts, within health_timeout_seconds

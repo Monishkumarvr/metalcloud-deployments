@@ -1,0 +1,15 @@
+# Tracer-bullet app: any tiny image with a healthcheck. The image comes only from the
+# Release manifest (METALCLOUD_IMAGE, pinned by digest); nothing is built or mounted
+# from outside the Release and Persistent data.
+services:
+  app:
+    image: ${METALCLOUD_IMAGE}
+    env_file: ${METALCLOUD_RELEASE}/config/site.env
+    volumes:
+      - ${METALCLOUD_RELEASE}/config:/release/config:ro
+      - ${METALCLOUD_PERSISTENT}/data:/data
+    healthcheck:
+      test: ["CMD", "test", "-f", "/release/config/does-not-exist"]
+      interval: 10s
+      timeout: 5s
+      retries: 3

@@ -1,0 +1,32 @@
+devices:
+  # TODO(ticket 01): the builder/sandbox Orin — same full L4T as Mantri, Tailscale SSH on.
+  sandbox-01:
+    site: sandbox
+    environment: staging
+    tailscale:
+      hostname: sandbox-jetson
+    hardware:
+      family: jetson-orin
+      memory_gb: 16
+    runtime_profile: docker-jetson-v1
+  mantri-edge-01:
+    site: mantri
+    environment: production
+    tailscale:
+      hostname: 100.94.147.105
+      ssh_user: ai
+    hardware:
+      family: jetson-orin
+      memory_gb: 8
+    runtime_profile: docker-jetson-v1
+  # Test Device (not production). Replaces the sandbox-01 placeholder for tracer runs.
+  pashupati-edge-01:
+    site: pashupati
+    environment: staging
+    tailscale:
+      hostname: 100.121.10.15
+      ssh_user: ai
+    hardware:
+      family: jetson-orin
+      memory_gb: 8
+    runtime_profile: docker-jetson-v1

@@ -1,0 +1,2 @@
+# Artifacts are addressed by sha256: bytes must be identical on every checkout.
+* -text

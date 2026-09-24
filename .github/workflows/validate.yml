@@ -1,0 +1,32 @@
+name: validate
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Needs no cloud credentials: gs:// artifacts are hash-checked at deploy time instead.
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Releases are append-only
+        if: github.event_name == 'pull_request'
+        run: sh tools/append-only.sh "origin/${{ github.base_ref }}"
+
+      # fleetctl comes from the Jetson Fleet repo. Set the FLEET_REPO variable (owner/name)
+      # and, while that repo is private, a read-only FLEET_REPO_TOKEN secret.
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ vars.FLEET_REPO }}
+          token: ${{ secrets.FLEET_REPO_TOKEN }}
+          path: .fleet
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: fleetctl edge validate --all
+        run: cargo run -q --locked --manifest-path .fleet/Cargo.toml -p fleet-controller --bin fleetctl -- edge --registry . validate --all

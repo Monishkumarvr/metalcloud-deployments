@@ -1,0 +1,12 @@
+# Versions are JetPack 6.1's; confirm against the sandbox and Mantri in Phase 0
+# (dpkg-query -W nvidia-l4t-core, nvcc --version, dpkg -l tensorrt, deepstream-app --version).
+schema_version: 1
+name: jetson-orin-r36.4
+architecture: aarch64
+device_family: jetson-orin
+gpu_arch: sm_87
+l4t: "36.4.3"
+cuda: "12.6"
+tensorrt: "10.3.0"
+deepstream: "7.1"
+container_runtime: nvidia
