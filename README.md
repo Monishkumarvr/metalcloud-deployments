@@ -25,6 +25,10 @@ on the Device in `/opt/metalcloud/persistent/secrets/`.
    [--compose P] [--site-env P] [--model NAME=P] --note "..."` writes
    `releases/<site>/<new-id>.yaml` with every artifact re-hashed; it never overwrites.
    Changed compose/site.env files go in a new `sites/<site>/<release>/` folder.
+   A new site has no Release to copy: `fleetctl edge new-site <site> <id> --app <checkout>
+   --build release-build.json --site-env P --model NAME=P` writes its first one (and its
+   `sites/<site>/` files) from the app's own compose and `.metalcloud/release.yaml`. Add
+   the site's Device to `fleet/devices.yaml` in the same PR.
 3. `fleetctl edge validate --all` — must pass; it prints the real sha256 of any artifact
    whose hash is wrong.
 4. Point `sites/<site>/production.yaml` at the new id, in a PR.
