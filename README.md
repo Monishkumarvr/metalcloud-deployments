@@ -32,3 +32,10 @@ on the Device in `/opt/metalcloud/persistent/secrets/`.
    `fleetctl edge deploy <device>` (asks before activating), then `fleetctl edge drift`.
 
 Run `fleetctl edge …` from this directory, or set `METALCLOUD_DEPLOYMENTS` to it.
+
+## Getting fleetctl
+
+Download the operator kit (`fleetctl.exe`, the on-device `metalcloud-edge`, and the
+Claude/Codex skills) from Artifact Registry, repository `operator-kits`, package
+`jetson-fleet-operator`. Setup, access requests and the commands are in
+[OPERATOR.md](https://github.com/Monishkumarvr/jetson_fleet/blob/main/OPERATOR.md).
