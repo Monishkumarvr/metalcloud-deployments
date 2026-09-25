@@ -1,0 +1,108 @@
+# Mantri, the whole Jetson in one container (ADR 0006): mantri_pipeline.py plus
+# the monotrack, inoculation and spectro modules, each switched on in site.env.
+# The image comes only from the Release manifest (METALCLOUD_IMAGE, pinned by
+# digest); code, Engines and config are never mounted from anywhere else.
+# Release G adds MediaMTX as its own container (not a vision module, so outside the
+# app container), taking over from the native mantri-mediamtx.service.
+services:
+  mantri-vision:
+    image: ${METALCLOUD_IMAGE}
+    restart: unless-stopped
+    # DeepStream reads rtsp://localhost:8554/camera-*; start once MediaMTX serves it.
+    depends_on:
+      mediamtx:
+        condition: service_healthy
+    runtime: nvidia
+    network_mode: host
+    ipc: host
+    # Keep CPU0 free: on JetPack 6 every PCIe MSI (all NVMe queues and the
+    # camera NIC) is routed to CPU0 only. Pipeline load there starved those
+    # interrupts -> NVMe "timeout, completion polled" + RCU stalls -> resets.
+    cpuset: "1-5"
+    mem_limit: 7g
+    memswap_limit: 8g
+    shm_size: 512m
+
+    # The image is immutable at run time: a write outside Persistent data fails
+    # loudly instead of vanishing on the next Release.
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /run
+
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+      - CUDA_MODULE_LOADING=LAZY
+      - OMP_NUM_THREADS=1
+      - OPENBLAS_NUM_THREADS=1
+      - MKL_NUM_THREADS=1
+      - MALLOC_ARENA_MAX=2
+      # NOTE: DISPLAY intentionally unset — headless. Setting it without X auth
+      # crashes the GStreamer plugin scanner via EGL and poisons the registry cache.
+
+    # Operational flags come with the Release; secrets stay on the Device and
+    # never enter the registry. A missing secrets file stops the stage.
+    env_file:
+      - ${METALCLOUD_RELEASE}/config/site.env
+      - ${METALCLOUD_PERSISTENT}/secrets/mantri.env
+
+    volumes:
+      # Engines (checked against SHA256SUMS by the entrypoint) and site config.
+      - ${METALCLOUD_RELEASE}:/release:ro
+      # Everything the app writes.
+      - ${METALCLOUD_PERSISTENT}/database:/app/ai_vision/state
+      - ${METALCLOUD_PERSISTENT}/logs:/app/ai_vision/logs
+      - ${METALCLOUD_PERSISTENT}/output:/app/ai_vision/output
+      - ${METALCLOUD_PERSISTENT}/cache/gst-registry:/app/cache/gst-registry
+      - ${METALCLOUD_PERSISTENT}/cache/trt-compute:/root/.cache/riva/trt-engine-cache
+
+    devices:
+      - /dev/nvmap:/dev/nvmap
+
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+
+    logging:
+      # json-file (not journald): journald silently received nothing during
+      # an overnight restart loop on a sibling deployment.
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+    healthcheck:
+      test: ["CMD", "/app/docker/healthcheck.sh"]
+      interval: 60s
+      timeout: 15s
+      start_period: 120s
+      retries: 3
+
+  mediamtx:
+    # bluenviron/mediamtx 1.20.1-ffmpeg, copied unchanged (same digest) into our registry;
+    # the version Mantri ran natively. -ffmpeg because the plain image has no shell,
+    # so nothing to run a healthcheck with. Rehearsed on Pashupathi 2026-09-25.
+    image: asia-south1-docker.pkg.dev/gen-lang-client-0603015471/edge/mediamtx:1.20.1-ffmpeg@sha256:16c56911dbd1fd7a85455042fa8320779fc8bf6575c6903f74023b202c1a620c
+    restart: unless-stopped
+    network_mode: host
+    # Camera credentials live in the config, so it stays on the Device, never in the registry.
+    volumes:
+      - type: bind
+        source: ${METALCLOUD_PERSISTENT}/secrets/mediamtx.yml
+        target: /mediamtx.yml
+        read_only: true
+        bind:
+          create_host_path: false
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "nc", "-z", "127.0.0.1", "8554"]
+      interval: 10s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
