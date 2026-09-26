@@ -1,0 +1,205 @@
+{
+  "camera_name": "Spectro_Camera",
+  "configuration_fingerprint": "d6b5200e19b559202b1553eebb9436ba66fe81ca8dd4bb1282c330f8c4a1511d",
+  "event_stream": "/app/spectro/output/events.json",
+  "event_bridge": {
+    "enabled": true,
+    "socket_path": "/app/ai_vision/state/events.sock",
+    "outbox_path": "/app/ai_vision/state/spectro.outbox",
+    "stream_id": 0
+  },
+  "gpu_id": 0,
+  "model_graph": [],
+  "module_keys": [
+    "spectro"
+  ],
+  "modules": [
+    {
+      "calibration_status": "not_required",
+      "capabilities": [
+        "pixel_analysis",
+        "white_ratio",
+        "zone",
+        "point_event"
+      ],
+      "customized_fields": [],
+      "display_name": "Spectrometer",
+      "enabled": true,
+      "helper_paths": [],
+      "models": [],
+      "module_key": "spectro",
+      "package_fingerprint": "817c39a9a01ee47a42254499d75e4f76dbd493d0a9bda0679d6bdd5758651017",
+      "package_manifest_path": "/app/spectro/modules/spectro/opsis_module.json",
+      "package_path": "/app/spectro/modules/spectro",
+      "preset_version": 2,
+      "profile_order": 0,
+      "rules": [
+        {
+          "aggregation_frames": 1,
+          "confirmation_frames": 1,
+          "coupled_event": "",
+          "glare_timestamps": [],
+          "idle_timestamps": [],
+          "key": "spectro_activity",
+          "label": "Spectrometer Activity",
+          "negative_timestamps": [],
+          "off_threshold": 0.3,
+          "on_threshold": 0.3,
+          "positive_timestamps": [],
+          "tracker_loss_behavior": "hold"
+        }
+      ],
+      "run_context": {
+        "run_id": "run_7610ca1d1ac5",
+        "run_name": "Spectro_Camera / Spectrometer / Run 0001",
+        "site_name": "Spectro_Camera",
+        "site_profile_id": "site_0390b968499f",
+        "source_height": 1440,
+        "source_id": "source_f355b8659dda",
+        "source_name": "Source",
+        "source_width": 2560
+      },
+      "runtime_language": "cpp",
+      "settings": {
+        "absolute_pixel_threshold": 210,
+        "analysis_height": 1080,
+        "analysis_use_source_resolution": false,
+        "analysis_width": 1920,
+        "completion_point_events": true,
+        "event_schema": "point",
+        "independent_zones": true,
+        "managed_runtime": true,
+        "off_confirmation_frames": 1,
+        "off_threshold": 0.3,
+        "on_confirmation_frames": 1,
+        "on_threshold": 0.3,
+        "package_required": true,
+        "pixel_analysis_coordinate_space": "pre_mux",
+        "pixel_analysis_geometry": "polygon",
+        "tracker_enabled": false,
+        "white_ratio_function": "ds_extract_white_ratio_rgba",
+        "zone_membership_default": "pixel_roi",
+        "zones_required": true
+      },
+      "states": [
+        {
+          "color_role": "muted",
+          "confirmation_frames": 0,
+          "confirmation_seconds": 0.0,
+          "entry_condition": "",
+          "event_style": "none",
+          "evidence_trigger": false,
+          "exit_condition": "",
+          "hysteresis": 0.0,
+          "key": "idle",
+          "label": "IDLE",
+          "locked": false,
+          "overlay_visible": true,
+          "severity": "off"
+        },
+        {
+          "color_role": "cyan",
+          "confirmation_frames": 0,
+          "confirmation_seconds": 0.0,
+          "entry_condition": "",
+          "event_style": "point",
+          "evidence_trigger": false,
+          "exit_condition": "",
+          "hysteresis": 0.0,
+          "key": "active",
+          "label": "ACTIVE",
+          "locked": false,
+          "overlay_visible": true,
+          "severity": "normal"
+        }
+      ],
+      "zones": [
+        {
+          "analysis_geometry": "polygon",
+          "frame_height": 1440,
+          "frame_width": 2560,
+          "key": "Sample_zone",
+          "label": "Sample_zone",
+          "locked": false,
+          "membership": "pixel_roi",
+          "points": [
+            [
+              1759,
+              758
+            ],
+            [
+              2041,
+              761
+            ],
+            [
+              2050,
+              1073
+            ],
+            [
+              1766,
+              1059
+            ]
+          ],
+          "required": true
+        }
+      ]
+    }
+  ],
+  "output": {
+    "bitrate_mode": "VBR",
+    "coco_evidence": true,
+    "codec": "H.264 High",
+    "csv_mode": "none",
+    "directory": "/app/spectro/output",
+    "event_schema": "combined",
+    "fps": 25.0,
+    "gop": 60,
+    "height": 720,
+    "screenshots": true,
+    "use_source_resolution": false,
+    "video_mode": "headless",
+    "width": 1280
+  },
+  "overlay": {
+    "backing_color": "#090909",
+    "backing_opacity": 0.72,
+    "edge_offset": 24,
+    "font_family": "Oxanium",
+    "label_size": 20,
+    "module_state_size": 22,
+    "scale_max": 2.0,
+    "scale_min": 0.75,
+    "scale_reference_height": 1080,
+    "scale_reference_width": 1920,
+    "show_debug_metrics": false,
+    "show_frame_index": true,
+    "show_module_rows": true,
+    "show_timestamp": true,
+    "show_watermark": false,
+    "show_zone_labels": true,
+    "stroke_width": 2,
+    "timestamp_size": 24
+  },
+  "package_version": "package_0001",
+  "pipeline_signature": "89e1c3f6f80117b66c088a9a068b47af843b88913ae2a2f7d86d5db68dbcb614",
+  "progress_stream": "stdout-jsonl",
+  "run_id": "production",
+  "run_name": "spectro_camera__spectrometer",
+  "schema_version": 2,
+  "site_name": "Spectro_Camera",
+  "site_profile_id": "site_0390b968499f",
+  "source": {
+    "duration_seconds": 0,
+    "fps": 25.0,
+    "frame_count": 0,
+    "height": 1440,
+    "id": "source_f355b8659dda",
+    "kind": "rtsp",
+    "name": "Source",
+    "reconnect_backoff_seconds": 2.0,
+    "reconnect_retry_limit": 10,
+    "rtsp_recording_mode": "segmented",
+    "uri": "rtsp://localhost:8554/camera-1",
+    "width": 2560
+  }
+}
