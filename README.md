@@ -8,7 +8,8 @@ behind this repo are its ADRs 0002–0004.
 |---|---|
 | `fleet/devices.yaml` | Every Device: Site, environment, Tailscale hostname, SSH login |
 | `sites/<site>/production.yaml` | The Site's Desired release (a one-line pointer) |
-| `sites/<site>/…` | Compose file and non-secret site config that Releases reference by sha256 |
+| `sites/<site>/…` | Compose file, non-secret site config and app config files (zones, …) that Releases reference by sha256 |
+| `models/<site>/` | ONNX models. A new version is a new file; the old one stays, since older Releases use it |
 | `releases/<site>/<id>.yaml` | Release manifests. **Append-only**: never edit or delete one; make a new id |
 | `builder-profiles/` | The machine an image must be built on (checked against image labels) |
 | `runtime-profiles/` | How a Device runs Releases |
@@ -22,9 +23,11 @@ on the Device in `/opt/metalcloud/persistent/secrets/`.
    `fleetctl edge build <builder> --repo <app checkout> --profile builder-profiles/<profile>.yaml`
    writes `release-build.json` (do not commit it).
 2. `fleetctl edge new-release <site> <new-id> --from <current-id> --build release-build.json
-   [--compose P] [--site-env P] [--model NAME=P] --note "..."` writes
+   [--compose P] [--site-env P] [--model NAME=P] [--config NAME=P] --note "..."` writes
    `releases/<site>/<new-id>.yaml` with every artifact re-hashed; it never overwrites.
-   Changed compose/site.env files go in a new `sites/<site>/<release>/` folder.
+   Changed compose/site.env/config files go in a new `sites/<site>/<release>/` folder.
+   A config file (`--config monotrack_zone.json=sites/mantri/release-x/monotrack_zone.json`)
+   reaches the app at `/release/config/<name>`: a config-only change skips step 1.
    A new site has no Release to copy: `fleetctl edge new-site <site> <id> --app <checkout>
    --build release-build.json --site-env P --model NAME=P` writes its first one (and its
    `sites/<site>/` files) from the app's own compose and `.metalcloud/release.yaml`. Add
