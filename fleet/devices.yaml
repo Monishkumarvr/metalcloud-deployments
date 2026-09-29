@@ -1,14 +1,21 @@
 devices:
-  # TODO(ticket 01): the builder/sandbox Orin — same full L4T as Mantri, Tailscale SSH on.
+  # Image builder: GCP VM (c4a-standard-4, arm64, no GPU), a "virtual builder" that runs
+  # no app. Off between builds: `fleetctl edge build sandbox-01` starts it, and it powers
+  # itself off 20 minutes after the last build. Reachable only over Tailscale.
   sandbox-01:
     site: sandbox
     environment: staging
     tailscale:
-      hostname: sandbox-jetson
+      hostname: 100.79.30.88
+      ssh_user: ai
     hardware:
       family: jetson-orin
       memory_gb: 16
     runtime_profile: docker-jetson-v1
+    cloud_vm:
+      project: gen-lang-client-0603015471
+      zone: asia-south1-a
+      instance: sandbox-builder-01
   mantri-edge-01:
     site: mantri
     environment: production
