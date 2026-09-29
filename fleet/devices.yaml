@@ -37,10 +37,10 @@ devices:
       family: jetson-orin
       memory_gb: 8
     runtime_profile: docker-jetson-v1
-  # Test Device (not production). Replaces the sandbox-01 placeholder for tracer runs.
+  # Production from 2026-09-30 (new model). Was the test Device; builds go to sandbox-01.
   pashupati-edge-01:
     site: pashupati
-    environment: staging
+    environment: production
     tailscale:
       hostname: 100.121.10.15
       ssh_user: ai
