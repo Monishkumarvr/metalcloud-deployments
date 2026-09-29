@@ -19,6 +19,17 @@ devices:
       family: jetson-orin
       memory_gb: 8
     runtime_profile: docker-jetson-v1
+  # Nipha: tapping + deslagging, cameras D03/D05 (Tailscale nipha2, LAN 192.168.0.166).
+  nipha-edge-01:
+    site: nipha
+    environment: production
+    tailscale:
+      hostname: 100.76.230.66
+      ssh_user: ai
+    hardware:
+      family: jetson-orin
+      memory_gb: 8
+    runtime_profile: docker-jetson-v1
   # Test Device (not production). Replaces the sandbox-01 placeholder for tracer runs.
   pashupati-edge-01:
     site: pashupati

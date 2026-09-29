@@ -1,0 +1,61 @@
+# Nipha tapping + deslagging, first Release (nipha2_jetson_ai_vision 563de73): same 3 containers as the hand-run compose project
+schema_version: 1
+release:
+  id: nipha-release-001
+  created_at: "2026-09-29T13:21:10+05:30"
+site:
+  id: nipha
+application:
+  repository:
+    name: nipha2_jetson_ai_vision
+  git:
+    sha: 563de738501d024387e8078006d6435dd7249a44
+  container:
+    registry: asia-south1-docker.pkg.dev
+    repository: gen-lang-client-0603015471/edge/nipha-ai-vision
+    digest: sha256:593c61cda9e96d9541800c48abcfd4b26110bbf3bdaa0ab16b396cbdadf9b458
+    builder_profile:
+      artifact: builder-profiles/jetson-orin-r36.4.7.yaml
+      sha256: b6d8f4d3e41c0344b3d7ef1d8fd82d91e76777396847057e50e66617e2e391ec
+  compose:
+    artifact: sites/nipha/nipha-release-001/compose.yaml
+    sha256: cfb2f1327706f6f2fe147a15c036dbb959ac48dcb6372e3560efc52f1422c0e2
+runtime:
+  profile: docker-jetson-v1
+  requirements:
+    l4t: '36.4'
+models:
+  ladle:
+    model_id: nipha_ladle_fine_tuned
+    version: 1
+    artifact:
+      uri: models/nipha/nipha-ladle-fine-tuned-b1-1280-fp32-op17.onnx
+      sha256: 5cef3d678ff0cc6ff35ce07258fc7b00eb4189056efdf12c85de3c1abbf0346e
+    precision: fp16
+    input_shape:
+    - 1
+    - 3
+    - 1280
+    - 1280
+    parser:
+      path: /workspace/deepstream-nipha/deepstream-pipeline/libs/libnvdsinfer_yolov11.so
+      sha256: 366c69e3d880d0c362751ba5b74231e5a2572460518d69c7eee164612f0fad25
+    engine:
+      builder: trtexec
+      args:
+      - --memPoolSize=workspace:2048
+configuration:
+  site:
+    artifact: sites/nipha/nipha-release-001/site.env
+    sha256: 4c41fca757563a4fa214f91769285788e3607b376831fea7ea1a57d0fd313fbf
+deployment:
+  health_timeout_seconds: 300
+  rollback_on_health_failure: true
+  health:
+    required_services:
+    - nipha-d03
+    - nipha-d05
+    - nipha-web
+  smoke:
+    argv:
+    - /usr/local/bin/nipha-smoke.sh
