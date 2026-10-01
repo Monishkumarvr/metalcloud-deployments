@@ -1,0 +1,119 @@
+# Nipha with the furnace cameras (compose for Releases that ship the `pyrometer` model).
+# One image: the tapping pipeline (D03 + D05), the furnace pipeline (F12, F34, F56:
+# pyrometer + melting + heat cycles) and the live-view tab. The image
+# comes only from the Release (METALCLOUD_IMAGE, pinned by
+# digest); the Engine and site config come from the Release directory (/release), and
+# everything the app writes goes to Persistent data, which survives every Release.
+# Camera RTSP URLs stay on the Device in persistent/secrets/nipha.env
+# (NIPHA_D03_RTSP_URL, NIPHA_D05_RTSP_URL, NIPHA_F12_RTSP_URL, NIPHA_F34_RTSP_URL,
+# NIPHA_F56_RTSP_URL), never in the registry.
+x-nipha: &nipha
+  image: ${METALCLOUD_IMAGE}
+  runtime: nvidia
+  # Cameras are on the LAN; host networking also avoids Docker bridge setup,
+  # which fails on this host (kernel has no iptables "raw" table).
+  network_mode: host
+  init: true
+  restart: unless-stopped
+  # The app only finalizes its event JSON on SIGINT.
+  stop_signal: SIGINT
+  stop_grace_period: 30s
+  env_file:
+    - ${METALCLOUD_RELEASE}/config/site.env
+    - ${METALCLOUD_PERSISTENT}/secrets/nipha.env
+  volumes:
+    - ${METALCLOUD_RELEASE}:/release:ro
+    - ${METALCLOUD_PERSISTENT}/output:/workspace/deepstream-nipha/outputs
+    # Event database (steelcast schema), shared by both camera processes
+    - ${METALCLOUD_PERSISTENT}/database:/workspace/deepstream-nipha/state
+    # Live frames for nipha-web (was a tmpfs named volume; MetalCloud allows only
+    # binds under persistent/, and a tmpfs can't be shared between containers)
+    - ${METALCLOUD_PERSISTENT}/cache/live:/live
+  healthcheck:
+    test: ["CMD", "/usr/local/bin/nipha-healthcheck.sh"]
+    interval: 30s
+    timeout: 10s
+    retries: 3
+    start_period: 120s
+  logging:
+    driver: json-file
+    options:
+      max-size: "20m"
+      max-file: "5"
+  ulimits:
+    memlock: -1
+    stack: 67108864
+
+services:
+  # D03 + D05 in one pipeline: the ladle model at batch 2, tapping + deslagging per
+  # camera, one OSD per camera after nvstreamdemux. Events keep stream_id 0 (D03)
+  # and 1 (D05); live frames and status stay in /live/D03 and /live/D05.
+  nipha-tapping:
+    <<: *nipha
+    environment:
+      NIPHA_MODE: both
+      NIPHA_ANGLES: "D03 D05"
+      # 12.5 fps: the decoder keeps every 2nd frame (Jetson headroom, 2026-10-02);
+      # the 20-frame tapping rules scale to keep their 0.8 s.
+      NIPHA_FPS: "12.5"
+      NIPHA_DROP_FRAME_INTERVAL: "2"
+      NIPHA_TRACKER_CONFIG: configs/config_tracker_OCSort_ladle_12fps.yml
+
+  # Furnace cameras: the pyrometer model (batch-3 engine, used here at batch 1-2),
+  # melting per furnace (the pyrometer counts only while its furnace melts) and
+  # heat-cycle starts from the tapping events. Events use stream_id 2 (F12), 3 (F34),
+  # 4 (F56). On 2026-10-02, at 25 fps next to the tapping pipeline, multi-camera
+  # pipelines froze at 0 fps (nvstreamdemux stopped pushing): the 8 GB Orin was out of
+  # headroom. Release 005 runs the furnace cameras at 5 fps and tapping at 12.5 fps,
+  # and keeps two smaller furnace services rather than one 3-camera pipeline.
+  nipha-furnace-ab:
+    <<: *nipha
+    environment:
+      NIPHA_MODE: furnace
+      NIPHA_ANGLES: "F12 F34"
+      # 5 fps: melting (1 s confirm) and pyrometer (0.5 s confirm) need no more;
+      # every kept frame is sampled and inferred.
+      NIPHA_FPS: "5"
+      NIPHA_DROP_FRAME_INTERVAL: "5"
+      NIPHA_PYRO_INTERVAL: "0"
+      NIPHA_MELTING_STRIDE: "1"
+
+  nipha-furnace-e:
+    <<: *nipha
+    environment:
+      NIPHA_MODE: furnace
+      NIPHA_ANGLES: "F56"
+      # 5 fps: melting (1 s confirm) and pyrometer (0.5 s confirm) need no more;
+      # every kept frame is sampled and inferred.
+      NIPHA_FPS: "5"
+      NIPHA_DROP_FRAME_INTERVAL: "5"
+      NIPHA_PYRO_INTERVAL: "0"
+      NIPHA_MELTING_STRIDE: "1"
+
+  # Live-inference tab at http://<jetson-ip>:8080 (no GPU; reads frames from the live dir)
+  nipha-web:
+    image: ${METALCLOUD_IMAGE}
+    runtime: runc
+    network_mode: host
+    init: true
+    restart: unless-stopped
+    entrypoint: ["python3", "/opt/nipha-web/server.py"]
+    env_file:
+      - ${METALCLOUD_RELEASE}/config/site.env
+    environment:
+      NIPHA_WEB_PORT: "8080"
+      NIPHA_WEB_CAMERAS: "D03=Tapping Area 1 (Furnaces A-C),D05=Tapping Area 2 (Furnaces E-F),F12=Furnaces A-B,F34=Furnaces C-D,F56=Furnaces E-F"
+    volumes:
+      # Read-write only because MetalCloud requires every Release-image service to
+      # have a writable Persistent mount; the server only reads it.
+      - ${METALCLOUD_PERSISTENT}/cache/live:/live
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/api/status', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
