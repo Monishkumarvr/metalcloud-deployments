@@ -1,0 +1,60 @@
+# D03 + D05 in one pipeline: ladle batch 2, one OSD per camera after nvstreamdemux (overlay fix), combined tapping+deslagging per camera (nipha2_jetson_ai_vision fcdc1ca)
+schema_version: 1
+release:
+  id: nipha-release-002
+  created_at: "2026-10-01T23:34:54+05:30"
+site:
+  id: nipha
+application:
+  repository:
+    name: nipha2_jetson_ai_vision
+  git:
+    sha: fcdc1ca0302071a9a0ae36b4908ec2c9437b8df1
+  container:
+    registry: asia-south1-docker.pkg.dev
+    repository: gen-lang-client-0603015471/edge/nipha-ai-vision
+    digest: sha256:f43a6f9ea6742022cc93caf27be04af5450695385c29314f86124491cd50322d
+    builder_profile:
+      artifact: builder-profiles/jetson-orin-r36.4.7.yaml
+      sha256: b6d8f4d3e41c0344b3d7ef1d8fd82d91e76777396847057e50e66617e2e391ec
+  compose:
+    artifact: sites/nipha/nipha-release-002/compose.yaml
+    sha256: 440d7a56a8d3d3b5725788ff103606da673e4b718ee44420fd448d92ababf7f7
+runtime:
+  profile: docker-jetson-v1
+  requirements:
+    l4t: '36.4'
+models:
+  ladle:
+    model_id: nipha_ladle_fine_tuned
+    version: 2
+    artifact:
+      uri: models/nipha/nipha-ladle-fine-tuned-b2-1280-fp32-op17.onnx
+      sha256: c79e5bfacb0e4631d428e6ea5f0ddb63f6296a8d604bcf510941b3b0870c046e
+    precision: fp16
+    input_shape:
+    - 2
+    - 3
+    - 1280
+    - 1280
+    parser:
+      path: /workspace/deepstream-nipha/deepstream-pipeline/libs/libnvdsinfer_yolov11.so
+      sha256: 366c69e3d880d0c362751ba5b74231e5a2572460518d69c7eee164612f0fad25
+    engine:
+      builder: trtexec
+      args:
+      - --memPoolSize=workspace:2048
+configuration:
+  site:
+    artifact: sites/nipha/nipha-release-002/site.env
+    sha256: 6ddabee46754e6b662b16dbced77b16a118285be23db83e1287122e23ad6c14c
+deployment:
+  health_timeout_seconds: 300
+  rollback_on_health_failure: true
+  health:
+    required_services:
+    - nipha-tapping
+    - nipha-web
+  smoke:
+    argv:
+    - /usr/local/bin/nipha-smoke.sh
