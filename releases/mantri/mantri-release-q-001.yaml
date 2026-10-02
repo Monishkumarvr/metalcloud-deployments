@@ -1,0 +1,88 @@
+# Q-001: spectro analyses 1 frame/s; lighter preview (copy/encode only when watched, decoder drops to preview rate); preview from camera-1-low at 1280x720; tracker 16 targets, topk 50; healthcheck start_interval. Same Engines and zones as P-002.
+schema_version: 1
+release:
+  id: mantri-release-q-001
+  created_at: "2026-10-02T18:23:51+05:30"
+site:
+  id: mantri
+application:
+  repository:
+    name: mantri_ai_vision
+  git:
+    sha: a56c05bb03c8ffbd151047c94171745756ea5dab
+  container:
+    registry: asia-south1-docker.pkg.dev
+    repository: gen-lang-client-0603015471/edge/mantri-ai-vision
+    digest: sha256:581c697078494da54db4db207a4bdc888af7a26d5ccddbd029236fbda5378445
+    builder_profile:
+      artifact: builder-profiles/jetson-orin-r36.4.7.yaml
+      sha256: b6d8f4d3e41c0344b3d7ef1d8fd82d91e76777396847057e50e66617e2e391ec
+  compose:
+    artifact: sites/mantri/release-q1/compose.yaml
+    sha256: 8f11a4dd4b98f48870c8172bdec48628ab00d810615fcd8d41db18dcc2aaebb7
+runtime:
+  profile: docker-jetson-v1
+  requirements:
+    l4t: '36.4'
+models:
+  inoculation:
+    model_id: inoculation
+    version: 2
+    artifact:
+      uri: models/mantri/inoculation_v2.onnx
+      sha256: 93f36b78fd1fa5535a54a3dc868cbb28101b5cb940d8115c45d87e5d89f55076
+    precision: fp16
+    input_shape:
+    - 1
+    - 3
+    - 1280
+    - 1280
+    parser:
+      path: /app/inoculation/libs/libnvdsinfer_custom_impl_Yolo.so
+      sha256: 6885b740bb87ab8069445ecb04279ab17badf05422a7913c090e80a8231e96d9
+    engine:
+      builder: trtexec
+      args:
+      - --memPoolSize=workspace:2048
+  monotrack:
+    model_id: best_monotrack_mantri
+    version: 1
+    artifact:
+      uri: models/mantri/best_monotrack_mantri_v1.onnx
+      sha256: 4b2434c7bc3bf194bff5853c75d2f25398b2a29bf651ca3875437f589057014a
+    precision: fp16
+    input_shape:
+    - 1
+    - 3
+    - 1280
+    - 1280
+    parser:
+      path: /app/monotrack/libs/nvdsinfer_custom_impl_Yolo/libnvdsinfer_custom_impl_Yolo.so
+      sha256: 3af4e3dec93c9d6bfd6c305fd9584a956ff90ef091aa80d3bbf4698ee82ba9cf
+    engine:
+      builder: trtexec
+      args:
+      - --memPoolSize=workspace:2048
+configuration:
+  site:
+    artifact: sites/mantri/release-q1/site.env
+    sha256: b315650167e60a3ba628748b31e1be694c3a621dd6e6078514c0d186d6e18a29
+  files:
+    monotrack_zone.json:
+      artifact: sites/mantri/release-n/monotrack_zone.json
+      sha256: 965fd6287c9846fc5015eb848c408ec58c3847751ee95a1eeedcd1814b54a622
+    spectro_run.json:
+      artifact: sites/mantri/release-q1/spectro_run.json
+      sha256: 8c398ff58306d7ca948bfe4970ff52d0d0aff5f4dc365dd66abc38dbd16176e9
+deployment:
+  health_timeout_seconds: 300
+  rollback_on_health_failure: true
+  health:
+    required_services:
+    - mantri-vision
+    - mediamtx
+  smoke:
+    argv:
+    - /app/docker/smoke.sh
+  replaces_units:
+  - mantri-mediamtx.service
