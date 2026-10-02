@@ -1,0 +1,82 @@
+# 005 with one furnace service per camera (nipha-furnace-f12/-f34/-f56): multi-camera furnace pipelines froze with five streams on the Orin. Same image and models as 005.
+schema_version: 1
+release:
+  id: nipha-release-006
+  created_at: "2026-10-02T02:20:48+05:30"
+site:
+  id: nipha
+application:
+  repository:
+    name: nipha2_jetson_ai_vision
+  git:
+    sha: 4746e7137718105889cf93c6a8e3ba7769dfdadd
+  container:
+    registry: asia-south1-docker.pkg.dev
+    repository: gen-lang-client-0603015471/edge/nipha-ai-vision
+    digest: sha256:5defdacce3a45f0479035e471a8844af76cbccb0ec01433f3d18ee6d80ea901e
+    builder_profile:
+      artifact: builder-profiles/jetson-orin-r36.4.7.yaml
+      sha256: b6d8f4d3e41c0344b3d7ef1d8fd82d91e76777396847057e50e66617e2e391ec
+  compose:
+    artifact: sites/nipha/nipha-release-006/compose.yaml
+    sha256: 4b8788aff2c038e2cdeb6adbb79d0ae90a843883a25aee876c49c475b9929254
+runtime:
+  profile: docker-jetson-v1
+  requirements:
+    l4t: '36.4'
+models:
+  ladle:
+    model_id: nipha_ladle_fine_tuned
+    version: 3
+    artifact:
+      uri: models/nipha/nipha-ladle-fine-tuned-b2-736x1280-fp32-op17.onnx
+      sha256: 57c0dafeccb0ddab6a50c97195f2750fd554dc2a9ff3658fca669af7743d9739
+    precision: fp16
+    input_shape:
+    - 2
+    - 3
+    - 736
+    - 1280
+    parser:
+      path: /workspace/deepstream-nipha/deepstream-pipeline/libs/libnvdsinfer_yolov11.so
+      sha256: 366c69e3d880d0c362751ba5b74231e5a2572460518d69c7eee164612f0fad25
+    engine:
+      builder: trtexec
+      args:
+      - --memPoolSize=workspace:2048
+  pyrometer:
+    model_id: best_pyro_nipha_v1
+    version: 1
+    artifact:
+      uri: models/nipha/nipha-pyro-v1-b3-736x1280-fp32-op17.onnx
+      sha256: addc0f65506743758f2dc143605302baf027bf1ee974b5a546bd98c03dadf0ec
+    precision: fp16
+    input_shape:
+    - 3
+    - 3
+    - 736
+    - 1280
+    parser:
+      path: /workspace/deepstream-nipha/deepstream-pipeline/libs/libnvdsinfer_yolov11.so
+      sha256: 366c69e3d880d0c362751ba5b74231e5a2572460518d69c7eee164612f0fad25
+    engine:
+      builder: trtexec
+      args:
+      - --memPoolSize=workspace:2048
+configuration:
+  site:
+    artifact: sites/nipha/nipha-release-002/site.env
+    sha256: 6ddabee46754e6b662b16dbced77b16a118285be23db83e1287122e23ad6c14c
+deployment:
+  health_timeout_seconds: 300
+  rollback_on_health_failure: true
+  health:
+    required_services:
+    - nipha-tapping
+    - nipha-furnace-f12
+    - nipha-furnace-f34
+    - nipha-furnace-f56
+    - nipha-web
+  smoke:
+    argv:
+    - /usr/local/bin/nipha-smoke.sh
