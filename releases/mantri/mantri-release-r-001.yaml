@@ -1,0 +1,110 @@
+# R-001: dual track (Dual Track F1/F2) on camera 2 with Agni heats per tap; inoculation on camera 3 with the int8 ReLU 736 model; monotrack and dual track at 12.5 fps
+schema_version: 1
+release:
+  id: mantri-release-r-001
+  created_at: "2026-10-03T00:45:00+05:30"
+site:
+  id: mantri
+application:
+  repository:
+    name: mantri_ai_vision
+  git:
+    sha: 9a0a65852716607029d8f2ea77e65ce746863995
+  container:
+    registry: asia-south1-docker.pkg.dev
+    repository: gen-lang-client-0603015471/edge/mantri-ai-vision
+    digest: sha256:d4a964539fa08820e88ef43eca512983050d188535b431dcd82df0a70285065a
+    builder_profile:
+      artifact: builder-profiles/jetson-orin-r36.4.7.yaml
+      sha256: b6d8f4d3e41c0344b3d7ef1d8fd82d91e76777396847057e50e66617e2e391ec
+  compose:
+    artifact: sites/mantri/release-q1/compose.yaml
+    sha256: 8f11a4dd4b98f48870c8172bdec48628ab00d810615fcd8d41db18dcc2aaebb7
+runtime:
+  profile: docker-jetson-v1
+  requirements:
+    l4t: '36.4'
+models:
+  inoculation:
+    model_id: inoculation
+    version: 3
+    artifact:
+      uri: models/mantri/inoculation_v2_relu_736_nop4.onnx
+      sha256: ba004634debe1ef4577b7fa1a556202a7b64675dd5438d4847668d4a1ce9a012
+    precision: int8
+    input_shape:
+    - 1
+    - 3
+    - 736
+    - 1280
+    parser:
+      path: /app/inoculation/libs/libnvdsinfer_custom_impl_Yolo.so
+      sha256: 6885b740bb87ab8069445ecb04279ab17badf05422a7913c090e80a8231e96d9
+    calibration:
+      uri: models/mantri/inoculation_v2_relu_736_nop4_int8_calib.table
+      sha256: 48b949d77dc1fe82f55d503df219b7c18da7f2cb557dff82218d40a85a2d3a86
+    engine:
+      builder: trtexec
+      args:
+      - --memPoolSize=workspace:2048
+  monotrack:
+    model_id: best_monotrack_mantri
+    version: 1
+    artifact:
+      uri: models/mantri/best_monotrack_mantri_v1.onnx
+      sha256: 4b2434c7bc3bf194bff5853c75d2f25398b2a29bf651ca3875437f589057014a
+    precision: fp16
+    input_shape:
+    - 1
+    - 3
+    - 1280
+    - 1280
+    parser:
+      path: /app/monotrack/libs/nvdsinfer_custom_impl_Yolo/libnvdsinfer_custom_impl_Yolo.so
+      sha256: 3af4e3dec93c9d6bfd6c305fd9584a956ff90ef091aa80d3bbf4698ee82ba9cf
+    engine:
+      builder: trtexec
+      args:
+      - --memPoolSize=workspace:2048
+  dual_track:
+    model_id: dual_track
+    version: 1
+    artifact:
+      uri: models/mantri/dual_track_v1_736.onnx
+      sha256: 3ebc5d0b5edcc32f10b555bda4424357977e474bb39c38cbb075369a6d802420
+    precision: fp16
+    input_shape:
+    - 1
+    - 3
+    - 736
+    - 1280
+    parser:
+      path: /app/monotrack/libs/nvdsinfer_custom_impl_Yolo/libnvdsinfer_custom_impl_Yolo.so
+      sha256: 3af4e3dec93c9d6bfd6c305fd9584a956ff90ef091aa80d3bbf4698ee82ba9cf
+    engine:
+      builder: trtexec
+      args:
+      - --memPoolSize=workspace:2048
+configuration:
+  site:
+    artifact: sites/mantri/release-r/site.env
+    sha256: 9a47662860a6d118ebf2c93af28300b7e9c48bb6a546ef601147bd13f5d0fa2f
+  files:
+    monotrack_zone.json:
+      artifact: sites/mantri/release-n/monotrack_zone.json
+      sha256: 965fd6287c9846fc5015eb848c408ec58c3847751ee95a1eeedcd1814b54a622
+    spectro_run.json:
+      artifact: sites/mantri/release-k/spectro_run.json
+      sha256: 65fa45628963cf8a0a1e1c86ff2876b5c8b5c4333965f1bd2a85e6a80e192efe
+deployment:
+  health_timeout_seconds: 300
+  rollback_on_health_failure: true
+  health:
+    required_services:
+    - mantri-vision
+    - mediamtx
+  smoke:
+    argv:
+    - /app/docker/smoke.sh
+  replaces_units:
+  - mantri-mediamtx.service
