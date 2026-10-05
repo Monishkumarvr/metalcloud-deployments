@@ -1,8 +1,8 @@
-# 007 with RTSP over TCP only for F34 (007 rolled back: D03, D05, F12 stalled over TCP). Same image and models as 007.
+# 007 with RTSP over TCP only for F34, a faster frame watchdog (60 s grace, 45 s stale) and a 480 s health window. 007 rolled back: cameras that refuse their RTSP session right after a start (F12) were not restarted inside the 300 s window. Same image and models as 007.
 schema_version: 1
 release:
   id: nipha-release-008
-  created_at: "2026-10-05T11:09:40+05:30"
+  created_at: "2026-10-05T11:12:36+05:30"
 site:
   id: nipha
 application:
@@ -66,9 +66,9 @@ models:
 configuration:
   site:
     artifact: sites/nipha/nipha-release-008/site.env
-    sha256: 0298614e15b1a0c36791910addf17a681a10348ae4bf83179be776e579fc4031
+    sha256: 237c3898d28863dd17a894c59cba6fe1b62064eed06ffdc2a74ccda87729c558
 deployment:
-  health_timeout_seconds: 300
+  health_timeout_seconds: 480
   rollback_on_health_failure: true
   health:
     required_services:
