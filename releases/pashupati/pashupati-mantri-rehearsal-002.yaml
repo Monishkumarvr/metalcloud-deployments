@@ -1,0 +1,83 @@
+# Pashupathi rehearsal of Mantri Release J (Release config zones, inoculation v2); sync off
+schema_version: 1
+release:
+  id: pashupati-mantri-rehearsal-002
+  created_at: "2026-09-26T14:50:16+05:30"
+site:
+  id: pashupati
+application:
+  repository:
+    name: mantri_ai_vision
+  git:
+    sha: 979a5f3c983b59a0b9d49041204117de13b181b3
+  container:
+    registry: asia-south1-docker.pkg.dev
+    repository: gen-lang-client-0603015471/edge/mantri-ai-vision
+    digest: sha256:672997d9ce91bc7436b6f8713115bf13e3effd2ed75eb730638404bad76c7148
+    builder_profile:
+      artifact: builder-profiles/jetson-orin-r36.4.7.yaml
+      sha256: b6d8f4d3e41c0344b3d7ef1d8fd82d91e76777396847057e50e66617e2e391ec
+  compose:
+    artifact: sites/mantri/release-g/compose.yaml
+    sha256: 69e76e2898906f57c810a1e2fd307b54e70c7da78cbbc220889be4a9eabf7876
+runtime:
+  profile: docker-jetson-v1
+  requirements:
+    l4t: '36.4'
+models:
+  inoculation:
+    model_id: inoculation
+    version: 2
+    artifact:
+      uri: models/mantri/inoculation_v2.onnx
+      sha256: 93f36b78fd1fa5535a54a3dc868cbb28101b5cb940d8115c45d87e5d89f55076
+    precision: fp16
+    input_shape:
+    - 1
+    - 3
+    - 1280
+    - 1280
+    parser:
+      path: /app/inoculation/libs/libnvdsinfer_custom_impl_Yolo.so
+      sha256: 6885b740bb87ab8069445ecb04279ab17badf05422a7913c090e80a8231e96d9
+    engine:
+      builder: trtexec
+      args:
+      - --memPoolSize=workspace:2048
+  monotrack:
+    model_id: best_monotrack_mantri
+    version: 1
+    artifact:
+      uri: models/mantri/best_monotrack_mantri_v1.onnx
+      sha256: 4b2434c7bc3bf194bff5853c75d2f25398b2a29bf651ca3875437f589057014a
+    precision: fp16
+    input_shape:
+    - 1
+    - 3
+    - 1280
+    - 1280
+    parser:
+      path: /app/monotrack/libs/nvdsinfer_custom_impl_Yolo/libnvdsinfer_custom_impl_Yolo.so
+      sha256: 3af4e3dec93c9d6bfd6c305fd9584a956ff90ef091aa80d3bbf4698ee82ba9cf
+    engine:
+      builder: trtexec
+      args:
+      - --memPoolSize=workspace:2048
+configuration:
+  site:
+    artifact: sites/pashupati/mantri-rehearsal/site.env
+    sha256: 3ac77183f7f93dc4d66ba009e265e9d139dc9b9b3e1ebdd386eb4ea706b7719d
+  files:
+    monotrack_zone.json:
+      artifact: sites/mantri/release-j/monotrack_zone.json
+      sha256: dab02e08826276a656a9b592528b0a1482061c8ca27e4709266c22ed11b66fd9
+deployment:
+  health_timeout_seconds: 300
+  rollback_on_health_failure: true
+  health:
+    required_services:
+    - mantri-vision
+    - mediamtx
+  smoke:
+    argv:
+    - /app/docker/smoke.sh

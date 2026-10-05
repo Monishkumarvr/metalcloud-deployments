@@ -1,0 +1,35 @@
+schema_version: 1
+release:
+  id: pashupati-mediamtx-001
+  created_at: "2026-09-25T19:00:00+05:30"
+site:
+  id: pashupati
+application:
+  repository:
+    name: metalcloud-tracer
+  git:
+    sha: f9a8e042b07416988ba25fdcad96464e7acae3fc
+  container:
+    registry: asia-south1-docker.pkg.dev
+    repository: gen-lang-client-0603015471/edge/tracer
+    digest: sha256:3b62fc4cf73d43db905410f0e62139a873e4b2174a953bbd8edadf094789dfb3
+    builder_profile:
+      artifact: builder-profiles/jetson-orin-r36.4.yaml
+      sha256: 633db7d3ecc6481c78206bfd895f574ce089a2eb382d68e6f8be4c6985e207ab
+  compose:
+    artifact: sites/pashupati/tracer-mediamtx/compose.yaml
+    sha256: 635edb154b0c90cd1b51f4bdb0741bc52c47c2dbf83636b3bad9f76ef6e836c0
+runtime:
+  profile: docker-jetson-v1
+  requirements:
+    l4t: "36.4"
+configuration:
+  site:
+    artifact: sites/pashupati/tracer/site-001.env
+    sha256: d526a9431d68dca2482140c92e23abcc3c9e3b7bddd7b10af37c4b36c555e5e9
+deployment:
+  health_timeout_seconds: 90
+  rollback_on_health_failure: true
+  health:
+    required_services: [app, mediamtx]
+  replaces_units: [pashupati-mediamtx.service]

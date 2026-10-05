@@ -1,0 +1,36 @@
+# Ticket 12 rehearsal: the tracer app plus MediaMTX pinned by digest, taking over from
+# the native pashupati-mediamtx.service (deployment.replaces_units). Rolling back to a
+# Release without MediaMTX starts and enables the native unit again.
+services:
+  app:
+    image: ${METALCLOUD_IMAGE}
+    env_file: ${METALCLOUD_RELEASE}/config/site.env
+    volumes:
+      - ${METALCLOUD_RELEASE}/config:/release/config:ro
+      - ${METALCLOUD_PERSISTENT}/data:/data
+    healthcheck:
+      test: ["CMD", "test", "-f", "/release/config/site.env"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  mediamtx:
+    # bluenviron/mediamtx 1.20.1-ffmpeg, copied unchanged (same digest) into our registry.
+    # -ffmpeg because the plain image has no shell, so nothing to run a healthcheck with.
+    image: asia-south1-docker.pkg.dev/gen-lang-client-0603015471/edge/mediamtx:1.20.1-ffmpeg@sha256:16c56911dbd1fd7a85455042fa8320779fc8bf6575c6903f74023b202c1a620c
+    restart: unless-stopped
+    network_mode: host
+    # Camera credentials live in the config, so it stays on the Device, never in the registry.
+    volumes:
+      - type: bind
+        source: ${METALCLOUD_PERSISTENT}/secrets/mediamtx.yml
+        target: /mediamtx.yml
+        read_only: true
+        bind:
+          create_host_path: false
+    healthcheck:
+      test: ["CMD", "nc", "-z", "127.0.0.1", "8554"]
+      interval: 10s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
