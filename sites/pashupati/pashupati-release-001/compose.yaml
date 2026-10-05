@@ -1,0 +1,77 @@
+# Pashupati under MetalCloud Edge (compose project metalcloud-pashupati, run by
+# metalcloud-edge): Furnace 1 tapping + deslagging on NVR channel 7, and the AGNI sync.
+# The image comes only from the Release (METALCLOUD_IMAGE, pinned by digest); the Engine
+# and site config come from the Release directory (/release); everything the app writes
+# goes to Persistent data, which survives every Release.
+# The camera URL and the AGNI HMAC secret stay on the Device in
+# persistent/secrets/pashupati.env (PASHUPATI_CH7_RTSP_URL, AGNI_HMAC_SECRET), never in
+# the registry.
+x-common: &common
+  image: ${METALCLOUD_IMAGE}
+  # The NVR is on the plant LAN; host networking also serves the live tab directly.
+  network_mode: host
+  init: true
+  restart: unless-stopped
+  env_file:
+    - ${METALCLOUD_RELEASE}/config/site.env
+    - ${METALCLOUD_PERSISTENT}/secrets/pashupati.env
+  volumes:
+    - ${METALCLOUD_RELEASE}:/release:ro
+    - ${METALCLOUD_PERSISTENT}/pashupati:/data
+  logging:
+    driver: json-file
+    options:
+      max-size: "20m"
+      max-file: "5"
+
+services:
+  # Pipeline: events to /data/events/*.jsonl, status to /data/status/pipeline.json,
+  # annotated 1280x720 live-tab frames to /data/live/ch7.
+  pashupati-ch7:
+    <<: *common
+    runtime: nvidia
+    # The runtime closes its open tapping interval on SIGINT.
+    stop_signal: SIGINT
+    stop_grace_period: 30s
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/pashupati-healthcheck.sh"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+    ulimits:
+      memlock: -1
+      stack: 67108864
+
+  # Live inference tab at http://<jetson>:8080 (Nipha's tab; no GPU). Reads the
+  # annotated frames the pipeline keeps in /data/live/ch7.
+  pashupati-web:
+    <<: *common
+    runtime: runc
+    entrypoint: ["python3", "/workspace/web/server.py"]
+    environment:
+      NIPHA_WEB_PORT: "8080"
+      NIPHA_LIVE_DIR: /data/live
+      NIPHA_WEB_CAMERAS: "ch7=Furnace 1 Tapping and Deslagging"
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/api/status', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Heats to the AGNI API (no GPU). Outbox and sync status in /data/agni.
+  pashupati-sync:
+    <<: *common
+    runtime: runc
+    entrypoint: ["python3", "/workspace/services/agni_sync/agni_sync.py"]
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/pashupati-sync-healthcheck.sh"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
