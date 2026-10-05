@@ -1,0 +1,61 @@
+# Pashupati first Release: Furnace 1 tapping (dual mouth bands) + deslagging on NVR ch7, live inference tab, AGNI heat sync (customer 237). Image from Pashupati@ba629f6.
+schema_version: 1
+release:
+  id: pashupati-release-001
+  created_at: "2026-10-05T10:09:43+05:30"
+site:
+  id: pashupati
+application:
+  repository:
+    name: Pashupati
+  git:
+    sha: ba629f643e32062474b21b9fd1b501cdfcf53db5
+  container:
+    registry: asia-south1-docker.pkg.dev
+    repository: gen-lang-client-0603015471/edge/pashupati-ai-vision
+    digest: sha256:d4975ee5dc9cf3132c59a7f33c71ca585505cab8c0685f4e5904975c583f98b5
+    builder_profile:
+      artifact: builder-profiles/jetson-orin-r36.4.7.yaml
+      sha256: b6d8f4d3e41c0344b3d7ef1d8fd82d91e76777396847057e50e66617e2e391ec
+  compose:
+    artifact: sites/pashupati/pashupati-release-001/compose.yaml
+    sha256: c9912024c06086d7df8d69ad93aa4f4131e1b66e976b72dfad313e0cd66059e4
+runtime:
+  profile: docker-jetson-v1
+  requirements:
+    l4t: '36.4'
+models:
+  ladle:
+    model_id: pashupati_ladle_v1
+    version: 1
+    artifact:
+      uri: models/pashupati/best_ladle_pashupati_v1__imgsz-1280x736__fp32__b1__fixed.onnx
+      sha256: b1f2ba431dbeb6520977008a329a8407f5fdb8956a54460df360d73f00c08998
+    precision: fp16
+    input_shape:
+    - 1
+    - 3
+    - 736
+    - 1280
+    parser:
+      path: /workspace/runtime/libs/libnvdsinfer_custom_impl_Yolo.so
+      sha256: 872b3b8614820a3d36eae777f2576965859f3f4fa4c853ab4bf08be9f190008e
+    engine:
+      builder: trtexec
+      args:
+      - --memPoolSize=workspace:2048
+configuration:
+  site:
+    artifact: sites/pashupati/pashupati-release-001/site.env
+    sha256: 53010eb0120fe79baea83c9f40a4e5581ffd0ebb3a12868daed850493553b9f5
+deployment:
+  health_timeout_seconds: 300
+  rollback_on_health_failure: true
+  health:
+    required_services:
+    - pashupati-ch7
+    - pashupati-web
+    - pashupati-sync
+  smoke:
+    argv:
+    - /usr/local/bin/pashupati-smoke.sh
