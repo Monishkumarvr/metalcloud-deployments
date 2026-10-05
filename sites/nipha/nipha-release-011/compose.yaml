@@ -1,0 +1,164 @@
+# Nipha with the furnace cameras (compose for Releases that ship the `pyrometer` model).
+# One image: the tapping pipeline (D03 + D05), the furnace pipeline (F12, F34, F56:
+# pyrometer + melting + heat cycles) and the live-view tab. The image
+# comes only from the Release (METALCLOUD_IMAGE, pinned by
+# digest); the Engine and site config come from the Release directory (/release), and
+# everything the app writes goes to Persistent data, which survives every Release.
+# Camera RTSP URLs stay on the Device in persistent/secrets/nipha.env
+# (NIPHA_D03_RTSP_URL, NIPHA_D05_RTSP_URL, NIPHA_F12_RTSP_URL, NIPHA_F34_RTSP_URL,
+# NIPHA_F56_RTSP_URL), never in the registry.
+x-nipha: &nipha
+  image: ${METALCLOUD_IMAGE}
+  runtime: nvidia
+  # Cameras are on the LAN; host networking also avoids Docker bridge setup,
+  # which fails on this host (kernel has no iptables "raw" table).
+  network_mode: host
+  init: true
+  restart: unless-stopped
+  # The app only finalizes its event JSON on SIGINT.
+  stop_signal: SIGINT
+  stop_grace_period: 30s
+  env_file:
+    - ${METALCLOUD_RELEASE}/config/site.env
+    - ${METALCLOUD_PERSISTENT}/secrets/nipha.env
+  volumes:
+    - ${METALCLOUD_RELEASE}:/release:ro
+    - ${METALCLOUD_PERSISTENT}/output:/workspace/deepstream-nipha/outputs
+    # Event database (steelcast schema), shared by both camera processes
+    - ${METALCLOUD_PERSISTENT}/database:/workspace/deepstream-nipha/state
+    # Live frames for nipha-web (was a tmpfs named volume; MetalCloud allows only
+    # binds under persistent/, and a tmpfs can't be shared between containers)
+    - ${METALCLOUD_PERSISTENT}/cache/live:/live
+  healthcheck:
+    test: ["CMD", "/usr/local/bin/nipha-healthcheck.sh"]
+    interval: 30s
+    timeout: 10s
+    retries: 3
+    start_period: 120s
+  logging:
+    driver: json-file
+    options:
+      max-size: "20m"
+      max-file: "5"
+  ulimits:
+    memlock: -1
+    stack: 67108864
+
+services:
+  # D03 + D05 in one pipeline: the ladle model at batch 2, tapping + deslagging per
+  # camera, one OSD per camera after nvstreamdemux. Events keep stream_id 0 (D03)
+  # and 1 (D05); live frames and status stay in /live/D03 and /live/D05.
+  nipha-tapping:
+    <<: *nipha
+    environment:
+      NIPHA_MODE: both
+      NIPHA_ANGLES: "D03 D05"
+      # 12.5 fps: the decoder keeps every 2nd frame (Jetson headroom, 2026-10-02);
+      # the 20-frame tapping rules scale to keep their 0.8 s.
+      NIPHA_FPS: "12.5"
+      NIPHA_DROP_FRAME_INTERVAL: "2"
+      NIPHA_TRACKER_CONFIG: configs/config_tracker_OCSort_ladle_12fps.yml
+
+  # Furnace cameras: the pyrometer model (batch-3 engine, used here at batch 1),
+  # melting per furnace (the pyrometer counts only while its furnace melts) and
+  # heat-cycle starts from the tapping events. Events use stream_id 2 (F12), 3 (F34),
+  # 4 (F56). One service per camera: on 2026-10-02, with five camera streams on the
+  # 8 GB Orin, every multi-camera furnace pipeline froze at 0 fps (nvstreamdemux
+  # stopped pushing), at 25 fps and at 5 fps, on main and sub streams; single-camera
+  # pipelines at 5 fps ran (F12/F34/F56 4.8-5.0 fps next to tapping).
+  nipha-furnace-f12:
+    <<: *nipha
+    environment:
+      NIPHA_MODE: furnace
+      NIPHA_ANGLES: "F12"
+      # TCP: over UDP lost packets corrupted frames; a pink-white wash read as melting in
+      # A's zone (false melting_on, 2026-10-05 11:38).
+      NIPHA_RTSP_TCP: "1"
+      # 5 fps: melting (5 s median, 15 s ON, 20 min OFF) and pyrometer (0.5 s confirm)
+      # need no more; every kept frame is sampled and inferred.
+      NIPHA_FPS: "5"
+      NIPHA_DROP_FRAME_INTERVAL: "5"
+      NIPHA_PYRO_INTERVAL: "0"
+      NIPHA_MELTING_STRIDE: "1"
+
+  nipha-furnace-f34:
+    <<: *nipha
+    environment:
+      NIPHA_MODE: furnace
+      NIPHA_ANGLES: "F34"
+      # TCP: over UDP this camera loses packets (smeared frames, no frames at all on 2026-10-05).
+      NIPHA_RTSP_TCP: "1"
+      # 5 fps: melting (5 s median, 15 s ON, 20 min OFF) and pyrometer (0.5 s confirm)
+      # need no more; every kept frame is sampled and inferred.
+      NIPHA_FPS: "5"
+      NIPHA_DROP_FRAME_INTERVAL: "5"
+      NIPHA_PYRO_INTERVAL: "0"
+      NIPHA_MELTING_STRIDE: "1"
+
+  nipha-furnace-f56:
+    <<: *nipha
+    environment:
+      NIPHA_MODE: furnace
+      NIPHA_ANGLES: "F56"
+      # 5 fps: melting (5 s median, 15 s ON, 20 min OFF) and pyrometer (0.5 s confirm)
+      # need no more; every kept frame is sampled and inferred.
+      NIPHA_FPS: "5"
+      NIPHA_DROP_FRAME_INTERVAL: "5"
+      NIPHA_PYRO_INTERVAL: "0"
+      NIPHA_MELTING_STRIDE: "1"
+
+  # AGNI sync (no GPU): reads the event database read-only, builds one record per heat
+  # per furnace and posts it, HMAC-signed, to the AGNI API (MongoDB + dashboard). Its
+  # outbox and sync-status.json live in persistent/database/agni/. AGNI_HMAC_SECRET
+  # comes only from the Device's secrets file.
+  nipha-sync:
+    image: ${METALCLOUD_IMAGE}
+    runtime: runc
+    network_mode: host
+    init: true
+    restart: unless-stopped
+    entrypoint: ["python3", "/opt/nipha-sync/nipha_sync.py"]
+    env_file:
+      - ${METALCLOUD_RELEASE}/config/site.env
+      - ${METALCLOUD_PERSISTENT}/secrets/nipha.env
+    volumes:
+      - ${METALCLOUD_PERSISTENT}/database:/workspace/deepstream-nipha/state
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/nipha-sync-healthcheck.sh"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Live-inference tab at http://<jetson-ip>:8080 (no GPU; reads frames from the live dir)
+  nipha-web:
+    image: ${METALCLOUD_IMAGE}
+    runtime: runc
+    network_mode: host
+    init: true
+    restart: unless-stopped
+    entrypoint: ["python3", "/opt/nipha-web/server.py"]
+    env_file:
+      - ${METALCLOUD_RELEASE}/config/site.env
+    environment:
+      NIPHA_WEB_PORT: "8080"
+      NIPHA_WEB_CAMERAS: "D03=Tapping Area 1 (Furnaces A-C),D05=Tapping Area 2 (Furnaces D-F),F12=Furnaces A-B,F34=Furnaces C-D,F56=Furnaces E-F"
+    volumes:
+      # Read-write only because MetalCloud requires every Release-image service to
+      # have a writable Persistent mount; the server only reads it.
+      - ${METALCLOUD_PERSISTENT}/cache/live:/live
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/api/status', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
