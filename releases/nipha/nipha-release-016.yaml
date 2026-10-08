@@ -1,0 +1,83 @@
+# 015 with AGNI live posting (SYNC_DRY_RUN=0): the heats rebuilt since go-live (agni-v3, nipha3-*) post in order, then live. Same image and models as 015.
+schema_version: 1
+release:
+  id: nipha-release-016
+  created_at: "2026-10-08T11:56:35+05:30"
+site:
+  id: nipha
+application:
+  repository:
+    name: nipha2_jetson_ai_vision
+  git:
+    sha: 56f673b5732c86cdf0691fbade3e8baa4fabf727
+  container:
+    registry: asia-south1-docker.pkg.dev
+    repository: gen-lang-client-0603015471/edge/nipha-ai-vision
+    digest: sha256:d684f0f046c12fb0d32bb6823e54c710365dccca08742d4f3632bc77f56e5b36
+    builder_profile:
+      artifact: builder-profiles/jetson-orin-r36.4.7.yaml
+      sha256: b6d8f4d3e41c0344b3d7ef1d8fd82d91e76777396847057e50e66617e2e391ec
+  compose:
+    artifact: sites/nipha/nipha-release-011/compose.yaml
+    sha256: 3975edb96845f940f5b3a84d386ca98274525d358a842b0c0e2f18828225570c
+runtime:
+  profile: docker-jetson-v1
+  requirements:
+    l4t: '36.4'
+models:
+  ladle:
+    model_id: nipha_ladle_fine_tuned
+    version: 4
+    artifact:
+      uri: models/nipha/nipha-ladle-fine-tuned-v2-b2-736x1280-fp32-op17.onnx
+      sha256: bfdf88e7efbc81eb3bb858b5429ec7a860ab2141bd943f09492fd37573833534
+    precision: fp16
+    input_shape:
+    - 2
+    - 3
+    - 736
+    - 1280
+    parser:
+      path: /workspace/deepstream-nipha/deepstream-pipeline/libs/libnvdsinfer_yolov11.so
+      sha256: 366c69e3d880d0c362751ba5b74231e5a2572460518d69c7eee164612f0fad25
+    engine:
+      builder: trtexec
+      args:
+      - --memPoolSize=workspace:2048
+  pyrometer:
+    model_id: best_pyro_nipha_v1
+    version: 1
+    artifact:
+      uri: models/nipha/nipha-pyro-v1-b3-736x1280-fp32-op17.onnx
+      sha256: addc0f65506743758f2dc143605302baf027bf1ee974b5a546bd98c03dadf0ec
+    precision: fp16
+    input_shape:
+    - 3
+    - 3
+    - 736
+    - 1280
+    parser:
+      path: /workspace/deepstream-nipha/deepstream-pipeline/libs/libnvdsinfer_yolov11.so
+      sha256: 366c69e3d880d0c362751ba5b74231e5a2572460518d69c7eee164612f0fad25
+    engine:
+      builder: trtexec
+      args:
+      - --memPoolSize=workspace:2048
+configuration:
+  site:
+    artifact: sites/nipha/nipha-release-016/site.env
+    sha256: 946313c304809294dfc081f7c1e29aae34896d4266c037dd87633424dffcaf99
+deployment:
+  health_timeout_seconds: 480
+  rollback_on_health_failure: true
+  health:
+    required_services:
+    - nipha-tapping
+    - nipha-furnace-f12
+    - nipha-furnace-f34
+    - nipha-furnace-f56
+    - nipha-sync
+    - nipha-web
+  smoke:
+    argv:
+    - /usr/local/bin/nipha-smoke.sh
