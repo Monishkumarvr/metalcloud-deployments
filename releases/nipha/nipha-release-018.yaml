@@ -1,0 +1,111 @@
+# 017 with furnace F gated by melting like A-E (NIPHA_ZONE_GATE_EXEMPT and AGNI_GATE_EXEMPT empty). Same image, models and zones as 017. Activate only after F's melting zone on F56 has read a full F melt correctly (the fume hood can cover it).
+schema_version: 1
+release:
+  id: nipha-release-018
+  created_at: "2026-10-09T17:02:47+05:30"
+site:
+  id: nipha
+application:
+  repository:
+    name: nipha2_jetson_ai_vision
+  git:
+    sha: f3c52be8410731c836c52d6f7ae54a9b6561d6a3
+  container:
+    registry: asia-south1-docker.pkg.dev
+    repository: gen-lang-client-0603015471/edge/nipha-ai-vision
+    digest: sha256:73fcfad598501d078bab864028aa5800d3330fb93931ff8ffc62822c9a0670f1
+    builder_profile:
+      artifact: builder-profiles/jetson-orin-r36.4.7.yaml
+      sha256: b6d8f4d3e41c0344b3d7ef1d8fd82d91e76777396847057e50e66617e2e391ec
+  compose:
+    artifact: sites/nipha/nipha-release-011/compose.yaml
+    sha256: 3975edb96845f940f5b3a84d386ca98274525d358a842b0c0e2f18828225570c
+runtime:
+  profile: docker-jetson-v1
+  requirements:
+    l4t: '36.4'
+models:
+  ladle:
+    model_id: nipha_ladle_fine_tuned
+    version: 4
+    artifact:
+      uri: models/nipha/nipha-ladle-fine-tuned-v2-b2-736x1280-fp32-op17.onnx
+      sha256: bfdf88e7efbc81eb3bb858b5429ec7a860ab2141bd943f09492fd37573833534
+    precision: fp16
+    input_shape:
+    - 2
+    - 3
+    - 736
+    - 1280
+    parser:
+      path: /workspace/deepstream-nipha/deepstream-pipeline/libs/libnvdsinfer_yolov11.so
+      sha256: 366c69e3d880d0c362751ba5b74231e5a2572460518d69c7eee164612f0fad25
+    engine:
+      builder: trtexec
+      args:
+      - --memPoolSize=workspace:2048
+  pyrometer:
+    model_id: best_pyro_nipha_v1
+    version: 1
+    artifact:
+      uri: models/nipha/nipha-pyro-v1-b3-736x1280-fp32-op17.onnx
+      sha256: addc0f65506743758f2dc143605302baf027bf1ee974b5a546bd98c03dadf0ec
+    precision: fp16
+    input_shape:
+    - 3
+    - 3
+    - 736
+    - 1280
+    parser:
+      path: /workspace/deepstream-nipha/deepstream-pipeline/libs/libnvdsinfer_yolov11.so
+      sha256: 366c69e3d880d0c362751ba5b74231e5a2572460518d69c7eee164612f0fad25
+    engine:
+      builder: trtexec
+      args:
+      - --memPoolSize=workspace:2048
+configuration:
+  site:
+    artifact: sites/nipha/nipha-release-018/site.env
+    sha256: 388afc7cbcfbe2bf22ea84594bd0ff393289e39271af3c6c1a16d461ced7c164
+  files:
+    deslagging_zone_D03.json:
+      artifact: sites/nipha/nipha-release-017/config/deslagging_zone_D03.json
+      sha256: 3bb101ab3fc4761510d3fc928af11ce1178ca58df2f915c0b5b47aa162304cbf
+    deslagging_zone_D05.json:
+      artifact: sites/nipha/nipha-release-017/config/deslagging_zone_D05.json
+      sha256: d8c624b8fb45bd30ba6ab23318ddcffc38cd0f1801f296b20f25ce5ddc8ec4e2
+    furnace_F12.json:
+      artifact: sites/nipha/nipha-release-017/config/furnace_F12.json
+      sha256: 94fa3eba4cf9eea558c03356c5adae3ed4bc30325009dcc2dd03677e9bc77206
+    furnace_F34.json:
+      artifact: sites/nipha/nipha-release-017/config/furnace_F34.json
+      sha256: 1206d61354ae05b953454c652c6af3019ae9078a50aca97b62da72ce499f33c5
+    furnace_F56.json:
+      artifact: sites/nipha/nipha-release-017/config/furnace_F56.json
+      sha256: 6848cd40710c9069a26199aef2b8feb5926d06eda69e9a866d02f57af5d9ca08
+    tapping_zone_D03.json:
+      artifact: sites/nipha/nipha-release-017/config/tapping_zone_D03.json
+      sha256: af47c90524924db9469546ffd4f8b63e3ab732b6af8824f6b9b2f9fa41f5d701
+    tapping_zone_D05.json:
+      artifact: sites/nipha/nipha-release-017/config/tapping_zone_D05.json
+      sha256: 4ec882d0078d1436dcb1ff272fc5dd3834502f20ee94cca20c5c7e539a6744a7
+    zone_labels_deslagging_D03.json:
+      artifact: sites/nipha/nipha-release-017/config/zone_labels_deslagging_D03.json
+      sha256: 39b0e91c1e58625e64ec28300ca0aeb03243c42ab853656aeb38b3f775dc65db
+    zone_labels_deslagging_D05.json:
+      artifact: sites/nipha/nipha-release-017/config/zone_labels_deslagging_D05.json
+      sha256: 562a4744d7af4babc2682f1c612b8c5c073405eed4b45c86bf9b88b841afc275
+deployment:
+  health_timeout_seconds: 480
+  rollback_on_health_failure: true
+  health:
+    required_services:
+    - nipha-tapping
+    - nipha-furnace-f12
+    - nipha-furnace-f34
+    - nipha-furnace-f56
+    - nipha-sync
+    - nipha-web
+  smoke:
+    argv:
+    - /usr/local/bin/nipha-smoke.sh
