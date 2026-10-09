@@ -1,0 +1,61 @@
+# Pashupati Release 002: tapping logic per PASHUPATI_TAPPING_LOGIC_HANDOFF.md (2026-10-09): zone-accumulated start/end, strip ROI below the ladle box top, 0.33 start/end, 5 s minimum, 10 s cooldown; Furnace 1 zone (660,463)-(1139,858) at a 1920x1080 processing canvas; live tab still 1280x720; AGNI sync minimum piece 5 s. Image from Pashupati@87b9fe2.
+schema_version: 1
+release:
+  id: pashupati-release-002
+  created_at: "2026-10-09T19:26:37+05:30"
+site:
+  id: pashupati
+application:
+  repository:
+    name: Pashupati
+  git:
+    sha: 87b9fe23dd8fef2c5cd144c57886637e9376fe02
+  container:
+    registry: asia-south1-docker.pkg.dev
+    repository: gen-lang-client-0603015471/edge/pashupati-ai-vision
+    digest: sha256:282aacc20dc73a6eecb5e85c0ec76a836ba348f2ade69c3cab1965e0e7a1e9c6
+    builder_profile:
+      artifact: builder-profiles/jetson-orin-r36.4.7.yaml
+      sha256: b6d8f4d3e41c0344b3d7ef1d8fd82d91e76777396847057e50e66617e2e391ec
+  compose:
+    artifact: sites/pashupati/pashupati-release-001/compose.yaml
+    sha256: c9912024c06086d7df8d69ad93aa4f4131e1b66e976b72dfad313e0cd66059e4
+runtime:
+  profile: docker-jetson-v1
+  requirements:
+    l4t: '36.4'
+models:
+  ladle:
+    model_id: pashupati_ladle_v1
+    version: 1
+    artifact:
+      uri: models/pashupati/best_ladle_pashupati_v1__imgsz-1280x736__fp32__b1__fixed.onnx
+      sha256: b1f2ba431dbeb6520977008a329a8407f5fdb8956a54460df360d73f00c08998
+    precision: fp16
+    input_shape:
+    - 1
+    - 3
+    - 736
+    - 1280
+    parser:
+      path: /workspace/runtime/libs/libnvdsinfer_custom_impl_Yolo.so
+      sha256: 872b3b8614820a3d36eae777f2576965859f3f4fa4c853ab4bf08be9f190008e
+    engine:
+      builder: trtexec
+      args:
+      - --memPoolSize=workspace:2048
+configuration:
+  site:
+    artifact: sites/pashupati/pashupati-release-002/site.env
+    sha256: b0e69cc32d5b986e0b5be7db6fe5f5cb48903967c09d99b6c9b1b53a35937818
+deployment:
+  health_timeout_seconds: 300
+  rollback_on_health_failure: true
+  health:
+    required_services:
+    - pashupati-ch7
+    - pashupati-web
+    - pashupati-sync
+  smoke:
+    argv:
+    - /usr/local/bin/pashupati-smoke.sh
