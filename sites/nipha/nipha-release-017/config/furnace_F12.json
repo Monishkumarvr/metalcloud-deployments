@@ -1,0 +1,20 @@
+{
+  "camera": "F12",
+  "source": "OPSIS pyro_hst_furnace_1_2 zones (Furnace_1 = A, Furnace_2 = B); melting redrawn 2026-10-09",
+  "frame_width": 1920,
+  "frame_height": 1080,
+  "furnaces": [
+    {
+      "furnace": "A",
+      "furnace_id": 1,
+      "melting": [[431, 404], [497, 379], [509, 405], [442, 429]],
+      "pyrometer": [[227, 322], [387, 174], [662, 198], [756, 423], [284, 582]]
+    },
+    {
+      "furnace": "B",
+      "furnace_id": 2,
+      "melting": [[730, 637], [810, 716], [962, 626], [886, 570]],
+      "pyrometer": [[355, 499], [686, 315], [1038, 290], [1161, 732], [623, 953]]
+    }
+  ]
+}

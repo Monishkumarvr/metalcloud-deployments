@@ -1,0 +1,14 @@
+{
+  "zone-1": {
+    "furnace_id": 1,
+    "display_name": "Furnace-A Deslagging Zone"
+  },
+  "zone-2": {
+    "furnace_id": 2,
+    "display_name": "Furnace-B Deslagging Zone"
+  },
+  "zone-3": {
+    "furnace_id": 3,
+    "display_name": "Furnace-C Deslagging Zone"
+  }
+}
