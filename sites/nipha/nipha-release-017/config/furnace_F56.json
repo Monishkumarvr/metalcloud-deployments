@@ -1,0 +1,20 @@
+{
+  "camera": "F56",
+  "source": "OPSIS pyro_hst_furnace_5_6 zones (Furnace_5 = E); F drawn 2026-10-09",
+  "frame_width": 1280,
+  "frame_height": 720,
+  "furnaces": [
+    {
+      "furnace": "E",
+      "furnace_id": 5,
+      "melting": [[262, 453], [322, 392], [398, 422], [351, 489]],
+      "pyrometer": [[96, 281], [276, 156], [562, 245], [581, 604], [100, 619]]
+    },
+    {
+      "furnace": "F",
+      "furnace_id": 6,
+      "melting": [[608, 194], [633, 202], [615, 221], [576, 209]],
+      "pyrometer": [[508, 113], [707, 26], [970, 62], [947, 345], [592, 343]]
+    }
+  ]
+}
