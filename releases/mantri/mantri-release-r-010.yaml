@@ -1,4 +1,4 @@
-# R-009 with redrawn monotrack zones (heat start, deslagging, pyrometer) on the 1280x720 preview; tapping zone, image and other settings unchanged
+# R-009 with redrawn monotrack zones (heat start, deslagging, pyrometer) and the temporary inoculation and spectro health skips removed (all 5 cameras stream again); image unchanged
 schema_version: 1
 release:
   id: mantri-release-r-010
@@ -87,8 +87,8 @@ models:
       - --memPoolSize=workspace:2048
 configuration:
   site:
-    artifact: sites/mantri/release-r8/site.env
-    sha256: 3ca13f6d697caf415678e03c7397c7e0198ee1f34afd90e0c7c1bfb9c9d6c8e8
+    artifact: sites/mantri/release-r10/site.env
+    sha256: 4ed4b69eb1e04a60bf27c8607a3161d25c5dc117d1d31dcc7e8ee928346ed3f9
   files:
     monotrack_zone.json:
       artifact: sites/mantri/release-r10/monotrack_zone.json
