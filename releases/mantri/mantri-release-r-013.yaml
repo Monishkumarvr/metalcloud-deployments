@@ -1,19 +1,19 @@
-# R-012 with all four monotrack zones redrawn (deslagging, heat start, pyrometer, tapping) on the 1280x720 preview; image unchanged
+# R-012 with all four monotrack zones redrawn (deslagging, heat start, pyrometer, tapping) on the 1280x720 preview; new image (mantri_ai_vision add892e): spectro publishes its sample zone to the live preview
 schema_version: 1
 release:
   id: mantri-release-r-013
-  created_at: "2026-10-14T10:54:11+05:30"
+  created_at: "2026-10-14T11:19:41+05:30"
 site:
   id: mantri
 application:
   repository:
     name: mantri_ai_vision
   git:
-    sha: 197b91be196eaad4c2b842a29c3b373c79c45d90
+    sha: add892e8870f695eb5c94c8dab392a698c2cfaee
   container:
     registry: asia-south1-docker.pkg.dev
     repository: gen-lang-client-0603015471/edge/mantri-ai-vision
-    digest: sha256:2d80cd6b6a5ade8bd1b6129c3642243ce450c40ee4c34139a93c79bc91e0215b
+    digest: sha256:f687d1d29f604780e2bf18f133f5490cf64c8225b29135787fd9f3c8ee6888c5
     builder_profile:
       artifact: builder-profiles/jetson-orin-r36.4.7.yaml
       sha256: b6d8f4d3e41c0344b3d7ef1d8fd82d91e76777396847057e50e66617e2e391ec
