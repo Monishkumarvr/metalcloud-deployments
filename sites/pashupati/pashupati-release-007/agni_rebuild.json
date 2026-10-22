@@ -1,0 +1,112 @@
+{
+  "_comment": "History the event log doesn't hold, for the Release 007 rebuild from HEAT_0001 (AGNI_REBUILD_FILE). seed_*: the 2 Oct test run before go-live (HEAT_0001-0006 and the go-live baseline), from the Release 002 outbox. exclude_windows: tapping confirmed false on NVR footage (2026-10-22: empty ladle in sunlight at the idle Furnace 2). history_marks: furnace melting starts found on NVR footage, for heats after an idle gap.",
+  "seed_pieces": [
+    {
+      "start": "2026-10-02T00:15:37+05:30",
+      "end": "2026-10-02T00:17:27+05:30",
+      "furnace": "Furnace2"
+    },
+    {
+      "start": "2026-10-02T01:24:58+05:30",
+      "end": "2026-10-02T01:26:56+05:30",
+      "furnace": "Furnace2"
+    },
+    {
+      "start": "2026-10-02T02:33:18+05:30",
+      "end": "2026-10-02T02:33:32+05:30",
+      "furnace": "Furnace2"
+    },
+    {
+      "start": "2026-10-02T02:33:33+05:30",
+      "end": "2026-10-02T02:35:14+05:30",
+      "furnace": "Furnace2"
+    },
+    {
+      "start": "2026-10-02T03:34:13+05:30",
+      "end": "2026-10-02T03:36:05+05:30",
+      "furnace": "Furnace2"
+    },
+    {
+      "start": "2026-10-02T04:33:48+05:30",
+      "end": "2026-10-02T04:34:03+05:30",
+      "furnace": "Furnace2"
+    },
+    {
+      "start": "2026-10-02T04:34:04+05:30",
+      "end": "2026-10-02T04:35:50+05:30",
+      "furnace": "Furnace2"
+    },
+    {
+      "start": "2026-10-02T05:54:55+05:30",
+      "end": "2026-10-02T05:56:49+05:30",
+      "furnace": "Furnace2"
+    },
+    {
+      "start": "2026-10-02T06:58:10+05:30",
+      "end": "2026-10-02T07:00:01+05:30",
+      "furnace": "Furnace2"
+    }
+  ],
+  "seed_deslags": [
+    {
+      "ts": "2026-10-02T00:50:00+05:30",
+      "furnace": "Furnace2"
+    },
+    {
+      "ts": "2026-10-02T02:00:00+05:30",
+      "furnace": "Furnace2"
+    },
+    {
+      "ts": "2026-10-02T04:00:00+05:30",
+      "furnace": "Furnace2"
+    },
+    {
+      "ts": "2026-10-02T05:15:00+05:30",
+      "furnace": "Furnace2"
+    },
+    {
+      "ts": "2026-10-02T06:30:00+05:30",
+      "furnace": "Furnace2"
+    }
+  ],
+  "exclude_windows": [
+    {
+      "start": "2026-10-21T06:20:00+05:30",
+      "end": "2026-10-21T06:40:00+05:30",
+      "furnace": "Furnace2"
+    },
+    {
+      "start": "2026-10-22T06:20:00+05:30",
+      "end": "2026-10-22T06:40:00+05:30",
+      "furnace": "Furnace2"
+    }
+  ],
+  "history_marks": [
+    {
+      "ts": "2026-10-13T07:50:00+05:30",
+      "furnace": "Furnace2",
+      "melting_on": true,
+      "_why": "NVR: dark 07:46, first glow 07:50, steady from 07:57"
+    },
+    {
+      "ts": "2026-10-17T00:01:00+05:30",
+      "furnace": "Furnace1",
+      "melting_on": true,
+      "_why": "NVR: dark 00:00, glowing from 00:01 (Furnace 2 dark after its 23:24 pour)"
+    },
+    {
+      "ts": "2026-10-22T08:54:00+05:30",
+      "furnace": "Furnace1",
+      "melting_on": true,
+      "_why": "NVR: faint flicker 08:49-08:51 below ON, steady glow from 08:54"
+    }
+  ],
+  "baseline_windows": [
+    {
+      "start": "2026-10-10T08:00:00+05:30",
+      "end": "2026-10-10T08:30:00+05:30",
+      "furnace": "Furnace2",
+      "_why": "first heat after the 2-10 Oct shutdown; NVR footage of 10 Oct is gone, so its start is unknown: not sent (user, 2026-10-22)"
+    }
+  ]
+}
