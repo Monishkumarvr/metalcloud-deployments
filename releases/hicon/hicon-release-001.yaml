@@ -1,0 +1,123 @@
+# HiCon release 001: Fleet adoption of the hand-run hicon-vision + hicon-mediamtx units, unchanged behaviour (sites/hicon/baseline-2026-10-23.md). App fleet-onboard f2d07c5.
+schema_version: 1
+release:
+  id: hicon-release-001
+  created_at: "2026-10-23T14:36:03+05:30"
+site:
+  id: hicon
+application:
+  repository:
+    name: hicon
+  git:
+    sha: f2d07c5566401015d85ef590f2ec827787a76bd3
+  container:
+    registry: asia-south1-docker.pkg.dev
+    repository: gen-lang-client-0603015471/edge/hicon-ai-vision
+    digest: sha256:1417e329b4ccb8368cd347ae552e902bdb699ce529c2574352441a44d04ff38a
+    builder_profile:
+      artifact: builder-profiles/jetson-orin-r36.4.7.yaml
+      sha256: b6d8f4d3e41c0344b3d7ef1d8fd82d91e76777396847057e50e66617e2e391ec
+  compose:
+    artifact: sites/hicon/hicon-release-001/compose.yaml
+    sha256: 9ff94f39fe483ea9c0f3fd314dc2678ff3492c461b4ea62cec70bcb32d91361b
+runtime:
+  profile: docker-jetson-v1
+  requirements:
+    l4t: '36.4'
+models:
+  mould:
+    model_id: mould_hicon
+    version: 1
+    artifact:
+      uri: models/hicon/Hicon_ModelOutputs_Moulds_weights_best.onnx
+      sha256: d39830a31e8d7c8d5a8b7eb7f8eeafbb873da5684a2340601c7cf5093ae20ce0
+    precision: fp16
+    input_shape:
+    - 1
+    - 3
+    - 1280
+    - 1280
+    parser:
+      path: /app/ai_vision/custom_parsers/nvdsinfer_custom_impl_Yolo/libnvdsinfer_custom_impl_Yolo.so
+      sha256: e128d85d79f2a1a352bb6bda866ae7f644a97acf2dd99579f2786fdb2ddfe7d8
+    engine:
+      builder: trtexec
+      args:
+      - --memPoolSize=workspace:2048
+  pouring:
+    model_id: pouring_hicon_hikvision_557
+    version: 1
+    artifact:
+      uri: models/hicon/best_pouring_hicon_hikvision_v1_557.onnx
+      sha256: ffae1c2ac19185c88b255464f32a45421297282930f08098ed7ae86ed3993489
+    precision: fp16
+    input_shape:
+    - 1
+    - 3
+    - 640
+    - 640
+    parser:
+      path: /app/ai_vision/custom_parsers/nvdsinfer_custom_impl_Yolo/libnvdsinfer_custom_impl_Yolo.so
+      sha256: e128d85d79f2a1a352bb6bda866ae7f644a97acf2dd99579f2786fdb2ddfe7d8
+    engine:
+      builder: trtexec
+      args:
+      - --memPoolSize=workspace:2048
+  pouring2:
+    model_id: pouring_hicon_930
+    version: 1
+    artifact:
+      uri: models/hicon/best_pouring_hicon_v1_930.onnx
+      sha256: 9b58748adde8c190191661345c4db1739cbcffe02dffe75af47834f743ebbed4
+    precision: fp16
+    input_shape:
+    - 1
+    - 3
+    - 640
+    - 640
+    parser:
+      path: /app/ai_vision/custom_parsers/nvdsinfer_custom_impl_Yolo/libnvdsinfer_custom_impl_Yolo.so
+      sha256: e128d85d79f2a1a352bb6bda866ae7f644a97acf2dd99579f2786fdb2ddfe7d8
+    engine:
+      builder: trtexec
+      args:
+      - --memPoolSize=workspace:2048
+  pyrometer:
+    model_id: pyro_rod_hicon
+    version: 2
+    artifact:
+      uri: models/hicon/best_pyro_rod_v2.onnx
+      sha256: ecb2716ec187b4ac7b3f4d530f8b9f1fce2db6a443f5a162c1682812f87b70ae
+    precision: fp16
+    input_shape:
+    - 1
+    - 3
+    - 1280
+    - 1280
+    parser:
+      path: /app/ai_vision/custom_parsers/nvdsinfer_custom_impl_Yolo/libnvdsinfer_custom_impl_Yolo.so
+      sha256: e128d85d79f2a1a352bb6bda866ae7f644a97acf2dd99579f2786fdb2ddfe7d8
+    engine:
+      builder: trtexec
+      args:
+      - --memPoolSize=workspace:2048
+configuration:
+  site:
+    artifact: sites/hicon/hicon-release-001/site.env
+    sha256: 00d988a3f2ad8f86a171b05f10c75c66a009398b0293a1b200913cc585745ae2
+deployment:
+  health_timeout_seconds: 300
+  rollback_on_health_failure: true
+  # The hand-run vision + MediaMTX units, stopped and disabled at activation;
+  # rollback to "legacy" re-enables them. The NVR timeline units (hicon-timeline*)
+  # stay native. See sites/hicon/baseline-2026-10-23.md.
+  replaces_units:
+  - hicon-vision.service
+  - hicon-mediamtx.service
+  health:
+    required_services:
+    - hicon-vision
+    - mediamtx
+  smoke:
+    argv:
+    - /app/docker/smoke.sh
