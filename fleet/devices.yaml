@@ -60,3 +60,16 @@ devices:
       family: jetson-orin
       memory_gb: 8
     runtime_profile: docker-jetson-v1
+  # HiCon: pouring (both furnaces) + moulds, pyrometer, tapping/deslagging/spectro; 3 cameras
+  # (Orin Nano 8 GB, serial 1424025019190, hostname hicon-desktop). Live production before Fleet:
+  # adopted like Steelcast. Baseline: sites/hicon/baseline-2026-10-23.md.
+  hicon-edge-01:
+    site: hicon
+    environment: production
+    tailscale:
+      hostname: 100.69.87.101
+      ssh_user: hicon
+    hardware:
+      family: jetson-orin
+      memory_gb: 8
+    runtime_profile: docker-jetson-v1
