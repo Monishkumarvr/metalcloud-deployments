@@ -20,7 +20,7 @@ devices:
     site: mantri
     environment: production
     tailscale:
-      hostname: 100.94.147.105
+      hostname: 100.94.147.104
       ssh_user: ai
     hardware:
       family: jetson-orin
