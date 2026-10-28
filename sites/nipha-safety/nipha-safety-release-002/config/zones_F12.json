@@ -1,0 +1,34 @@
+{
+  "stream_0": {
+    "ppe_zone": {
+      "polygons": [
+        [
+          [
+            0,
+            428
+          ],
+          [
+            485,
+            316
+          ],
+          [
+            1912,
+            1067
+          ],
+          [
+            8,
+            1071
+          ]
+        ]
+      ],
+      "names": [
+        "F12 zone 1"
+      ],
+      "canvas": [
+        1920,
+        1080
+      ],
+      "source": "Nipha Safety Zones editor, saved 2026-10-28"
+    }
+  }
+}
