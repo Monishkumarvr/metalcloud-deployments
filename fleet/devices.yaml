@@ -37,6 +37,18 @@ devices:
       family: jetson-orin
       memory_gb: 8
     runtime_profile: docker-jetson-v1
+  # Nipha safety: helmet PPE (YOLO26x) on furnace cameras F12/F34/F56 (LAN 192.168.0.168).
+  # App soumyadipbhattacharyya/nipha4_jetson_ai_vision. Staging during bring-up.
+  nipha-edge-02:
+    site: nipha-safety
+    environment: staging
+    tailscale:
+      hostname: 100.105.119.110
+      ssh_user: ai
+    hardware:
+      family: jetson-orin
+      memory_gb: 8
+    runtime_profile: docker-jetson-v1
   # Steelcast: helmet, heat cycle, tap-to-tap, deslagging, ladle preheat; 3 cameras
   # (Orin NX, serial 1421026046781). Baseline: sites/steelcast/baseline-2026-10-08.md.
   steelcast-edge-01:

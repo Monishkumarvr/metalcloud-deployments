@@ -1,0 +1,239 @@
+# Nipha safety (nipha-safety site): helmet PPE on the furnace cameras F12, F34, F56.
+# The image comes only from the Release manifest (METALCLOUD_IMAGE, pinned by digest);
+# code, Engines and config are never mounted from anywhere else.
+#
+#   mediamtx      pulls the cameras over TCP (credentials only in persistent/secrets/mediamtx.yml)
+#   safety-f12/34/56  one PPE app per camera (YOLO26x 1280 FP16, /release/engines/ppe.engine);
+#                 one camera's RTSP refusal or stall restarts only that container
+#   safety-sync   posts the three cameras' violations to POST /safety (HMAC)
+#   safety-web    live inference tab on http://<jetson-ip>:8080 (annotated frames, ~2 fps)
+#
+# The three camera services are written out in full (no YAML merge keys).
+services:
+  mediamtx:
+    # Same image and digest as Steelcast and Mantri.
+    image: asia-south1-docker.pkg.dev/gen-lang-client-0603015471/edge/mediamtx:1.20.1-ffmpeg@sha256:16c56911dbd1fd7a85455042fa8320779fc8bf6575c6903f74023b202c1a620c
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - type: bind
+        source: ${METALCLOUD_PERSISTENT}/secrets/mediamtx.yml
+        target: /mediamtx.yml
+        read_only: true
+        bind:
+          create_host_path: false
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "nc", "-z", "127.0.0.1", "8554"]
+      interval: 10s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+
+  safety-f12:
+    image: ${METALCLOUD_IMAGE}
+    restart: unless-stopped
+    depends_on:
+      mediamtx:
+        condition: service_healthy
+    runtime: nvidia
+    network_mode: host
+    ipc: host
+    mem_limit: 2500m
+    memswap_limit: 3g
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /run
+    environment:
+      - NIPHA_CAMERA_ID=F12
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+      - CUDA_MODULE_LOADING=LAZY
+      - MALLOC_ARENA_MAX=2
+    env_file:
+      - ${METALCLOUD_RELEASE}/config/site.env
+      - ${METALCLOUD_PERSISTENT}/secrets/nipha-safety.env
+    volumes:
+      - ${METALCLOUD_RELEASE}:/release:ro
+      - ${METALCLOUD_PERSISTENT}/database:/app/state
+      - ${METALCLOUD_PERSISTENT}/output:/app/output
+      - ${METALCLOUD_PERSISTENT}/cache/live:/app/live
+    devices:
+      - /dev/nvmap:/dev/nvmap
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
+    healthcheck:
+      test: ["CMD", "/app/docker/healthcheck.sh"]
+      interval: 60s
+      timeout: 15s
+      start_period: 300s
+      retries: 3
+
+  safety-f34:
+    image: ${METALCLOUD_IMAGE}
+    restart: unless-stopped
+    depends_on:
+      mediamtx:
+        condition: service_healthy
+    runtime: nvidia
+    network_mode: host
+    ipc: host
+    mem_limit: 2500m
+    memswap_limit: 3g
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /run
+    environment:
+      - NIPHA_CAMERA_ID=F34
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+      - CUDA_MODULE_LOADING=LAZY
+      - MALLOC_ARENA_MAX=2
+    env_file:
+      - ${METALCLOUD_RELEASE}/config/site.env
+      - ${METALCLOUD_PERSISTENT}/secrets/nipha-safety.env
+    volumes:
+      - ${METALCLOUD_RELEASE}:/release:ro
+      - ${METALCLOUD_PERSISTENT}/database:/app/state
+      - ${METALCLOUD_PERSISTENT}/output:/app/output
+      - ${METALCLOUD_PERSISTENT}/cache/live:/app/live
+    devices:
+      - /dev/nvmap:/dev/nvmap
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
+    healthcheck:
+      test: ["CMD", "/app/docker/healthcheck.sh"]
+      interval: 60s
+      timeout: 15s
+      start_period: 300s
+      retries: 3
+
+  safety-f56:
+    image: ${METALCLOUD_IMAGE}
+    restart: unless-stopped
+    depends_on:
+      mediamtx:
+        condition: service_healthy
+    runtime: nvidia
+    network_mode: host
+    ipc: host
+    mem_limit: 2500m
+    memswap_limit: 3g
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /run
+    environment:
+      - NIPHA_CAMERA_ID=F56
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+      - CUDA_MODULE_LOADING=LAZY
+      - MALLOC_ARENA_MAX=2
+    env_file:
+      - ${METALCLOUD_RELEASE}/config/site.env
+      - ${METALCLOUD_PERSISTENT}/secrets/nipha-safety.env
+    volumes:
+      - ${METALCLOUD_RELEASE}:/release:ro
+      - ${METALCLOUD_PERSISTENT}/database:/app/state
+      - ${METALCLOUD_PERSISTENT}/output:/app/output
+      - ${METALCLOUD_PERSISTENT}/cache/live:/app/live
+    devices:
+      - /dev/nvmap:/dev/nvmap
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
+    healthcheck:
+      test: ["CMD", "/app/docker/healthcheck.sh"]
+      interval: 60s
+      timeout: 15s
+      start_period: 300s
+      retries: 3
+
+  # No GPU: reads the three cameras' events.db, posts to /safety, writes
+  # persistent/database/sync/sync-status.json (and dry_run_items.jsonl while SYNC_DRY_RUN=1).
+  safety-sync:
+    image: ${METALCLOUD_IMAGE}
+    restart: unless-stopped
+    runtime: runc
+    network_mode: host
+    init: true
+    read_only: true
+    tmpfs:
+      - /tmp
+    entrypoint: ["python3", "/app/sync/safety_sync.py"]
+    env_file:
+      - ${METALCLOUD_RELEASE}/config/site.env
+      - ${METALCLOUD_PERSISTENT}/secrets/nipha-safety.env
+    volumes:
+      - ${METALCLOUD_PERSISTENT}/database:/app/state
+      - ${METALCLOUD_PERSISTENT}/output:/app/output
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "/app/docker/sync-healthcheck.sh"]
+      interval: 30s
+      timeout: 10s
+      start_period: 60s
+      retries: 3
+
+  # Live inference tab (no GPU): serves the tab, MJPEG streams and snapshots from the
+  # frames the camera containers keep in persistent/cache/live. Its own container, so a
+  # web problem can never affect inference.
+  safety-web:
+    image: ${METALCLOUD_IMAGE}
+    restart: unless-stopped
+    runtime: runc
+    network_mode: host
+    init: true
+    read_only: true
+    tmpfs:
+      - /tmp
+    entrypoint: ["python3", "/app/web/server.py"]
+    environment:
+      NIPHA_WEB_PORT: "8080"
+      NIPHA_LIVE_DIR: /live
+      NIPHA_TAB_DIR: /app/live-inference-tab
+      NIPHA_WEB_CAMERAS: "F12=Furnace A-B,F34=Furnace C-D,F56=Furnace E-F"
+    volumes:
+      # Read-write only because MetalCloud requires every Release-image service to
+      # have a writable Persistent mount; the server only reads it.
+      - ${METALCLOUD_PERSISTENT}/cache/live:/live
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/api/status', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
