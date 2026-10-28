@@ -1,0 +1,35 @@
+# OC-SORT tracker for the Nipha safety PPE app (NIPHA_TRACKER=ocsort), DeepStream 7.1
+# library trackers/lib/libOCSortDS71.so. Flat `key: value` pairs, not real YAML -- see
+# trackers/docs/config_schema_ocsort.md. A Release can override this file by shipping
+# /release/config/tracker_ocsort.yml (config-only retune).
+#
+# Tuned for YOLO26x on 3 cameras at ~1.7 fps (25 fps camera, NIPHA_FRAME_INTERVAL=12).
+# Frame-count keys (max_age, min_hits, delta_t) must be rescaled if the frame rate changes
+# (e.g. the Nano model).
+
+det_thresh: 0.10
+# Below every nvinfer pre-cluster-threshold (helmet goes down to 0.15 for the veto), so every
+# detection reaching the tracker is "high-score": the tracker never discards evidence itself.
+
+max_age: 51
+# ~30 s at 1.7 fps: how long a lost person (or helmet) keeps its ID. Chosen on the 2026-10-28 F56
+# replay: vs 17, 26% fewer person IDs, ID-switch estimate 17 -> 4, helmet evidence 91.4% -> 93.2%.
+# fresh helmet detections, never helmet track IDs, so helmet age has no effect on decisions.
+
+min_hits: 1
+# Report tracks immediately: holding detections back costs helmet evidence at this frame rate.
+
+iou_threshold: 0.2
+# Lower than the ladle's 0.3: people move up to a body width between frames 0.6 s apart.
+
+delta_t: 2
+inertia: 0.2
+use_byte: false
+low_thresh: 0.1
+frame_rate: 2
+max_targets_per_stream: 50
+per_class_tracking: true
+classes: all
+output_terminated_tracks: false
+output_shadow_tracks: false
+gpu_id: 0
