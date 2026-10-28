@@ -1,2 +1,4 @@
 # Artifacts are addressed by sha256: bytes must be identical on every checkout.
 * -text
+# Over GitHub's 100 MB file limit: stored with Git LFS (git-lfs needed to deploy).
+models/nipha-safety/*.onnx filter=lfs diff=lfs merge=lfs -text
