@@ -1,0 +1,74 @@
+# 002 + live /safety sync (SYNC_DRY_RUN=0, full backlog) + detection thresholds as site.env (unchanged: person 0.60, helmet 0.50); app 9b184a6
+schema_version: 1
+release:
+  id: nipha-safety-release-003
+  created_at: "2026-10-28T22:06:34+05:30"
+site:
+  id: nipha-safety
+application:
+  repository:
+    name: nipha4_jetson_ai_vision
+  git:
+    sha: 9b184a6b343376cb36cef357ab1d6282417d9faa
+  container:
+    registry: asia-south1-docker.pkg.dev
+    repository: gen-lang-client-0603015471/edge/nipha-safety-ai-vision
+    digest: sha256:3249c5177ff980e8005584d3026bb82f2ad4382be40d8ce55f11dc4daa024cd5
+    builder_profile:
+      artifact: builder-profiles/jetson-orin-r36.4.7.yaml
+      sha256: b6d8f4d3e41c0344b3d7ef1d8fd82d91e76777396847057e50e66617e2e391ec
+  compose:
+    artifact: sites/nipha-safety/nipha-safety-release-001/compose.yaml
+    sha256: c5f500ae88c41c867515bc1969c068e57992377c4c30f7c884dfb424aa7b985a
+runtime:
+  profile: docker-jetson-v1
+  requirements:
+    l4t: '36.4'
+models:
+  ppe:
+    model_id: safety_flagship_736x1280
+    version: 1
+    artifact:
+      uri: models/nipha-safety/safety_flagship_736x1280.onnx
+      sha256: 20d9f97eb0e03a9e4f71ed2b213585bfebd0997069804547c066d9288e5294f8
+    precision: fp16
+    input_shape:
+    - 1
+    - 3
+    - 736
+    - 1280
+    parser:
+      path: /app/libs/libnvdsinfer_custom_impl_Yolo.so
+      sha256: c596ea8654258ab62cdcf27fcc34ff82b905994416b9d5fa9b6cba30b4651a8b
+    engine:
+      builder: trtexec
+      args:
+      - --memPoolSize=workspace:2048
+configuration:
+  site:
+    artifact: sites/nipha-safety/nipha-safety-release-003/site.env
+    sha256: 552b98515f454f1b5f29bafad6150e70c726cf8b2d7b4ba547c8527add0ce876
+  files:
+    zones_F12.json:
+      artifact: sites/nipha-safety/nipha-safety-release-002/config/zones_F12.json
+      sha256: b065bdde369bd705e90b1235c7ce0a0ef33fc9baacf6ca6c5c2d4625202850b1
+    zones_F34.json:
+      artifact: sites/nipha-safety/nipha-safety-release-002/config/zones_F34.json
+      sha256: 62816d301991bb32677b519bd1400c200dfa7e333daffc8451d51083943f63ca
+    zones_F56.json:
+      artifact: sites/nipha-safety/nipha-safety-release-002/config/zones_F56.json
+      sha256: d714d72b17858589846ab146e34b887a5da7bbbbafd5cc0b74a4fbfef046eb32
+deployment:
+  health_timeout_seconds: 480
+  rollback_on_health_failure: true
+  health:
+    required_services:
+    - mediamtx
+    - safety-f12
+    - safety-f34
+    - safety-f56
+    - safety-sync
+    - safety-web
+  smoke:
+    argv:
+    - /app/docker/smoke.sh
