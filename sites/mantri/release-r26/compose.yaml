@@ -1,0 +1,221 @@
+# Mantri, the whole Jetson in one container (ADR 0006): mantri_pipeline.py plus
+# the monotrack, inoculation and spectro modules, each switched on in site.env.
+# The image comes only from the Release manifest (METALCLOUD_IMAGE, pinned by
+# digest); code, Engines and config are never mounted from anywhere else.
+# Release Q: healthcheck start_interval; shm_size dropped (ignored with ipc: host).
+# Release G adds MediaMTX as its own container (not a vision module, so outside the
+# app container), taking over from the native mantri-mediamtx.service.
+# Release R-023 adds pyro: the pyrometer-dip module (soumyadipbhattacharyya/Mantri_Metallics,
+# apps/pyro) on camera-6, which watches Dual Track F1. Same image as mantri-vision (an
+# overlay that adds /app/pyro), its own process and CUDA context, so a pyro failure never
+# takes the production pipeline down. Dips go to ai_vision over the event socket as
+# type pyrometer, module dual_track, furnace "Dual Track F1".
+# Release R-024: camera-6 on the live tab with pyro's zone, boxes and dip state. pyro
+# writes its metalcloud.overlay/v1 file to Persistent cache/overlay-pyro (the only mount two
+# containers can share); mantri-vision reads it read-only via FLEET_OVERLAY_EXTRA_DIRS.
+# The other modules' overlay files stay on mantri-vision's own /run tmpfs.
+# Release R-025: camera-6 also sees IF 05, the far Dual Track furnace. pyro watches both
+# zones of pyro_camera6_zone.json in one process: zone-1 IF 06 (near, "Dual Track F1") and
+# zone-2 IF 05 (far, "Dual Track F2", threshold 0.60). The backend shows the furnaces as
+# IF 06 / IF 05 (MANTRI_FURNACE_NAMES).
+# Release R-026: Dual Track (camera-2) zones come from the Release
+# (config/dual_track_zones.json, IF 05 deslagging redrawn), and the live tab shows the
+# Dual Track zones as IF 06 / IF 05 (FLEET_OVERLAY_ZONE_NAMES).
+services:
+  mantri-vision:
+    image: ${METALCLOUD_IMAGE}
+    restart: unless-stopped
+    # DeepStream reads rtsp://localhost:8554/camera-*; start once MediaMTX serves it.
+    depends_on:
+      mediamtx:
+        condition: service_healthy
+    runtime: nvidia
+    network_mode: host
+    ipc: host
+    # Keep CPU0 free: on JetPack 6 every PCIe MSI (all NVMe queues and the
+    # camera NIC) is routed to CPU0 only. Pipeline load there starved those
+    # interrupts -> NVMe "timeout, completion polled" + RCU stalls -> resets.
+    cpuset: "1-5"
+    mem_limit: 7g
+    memswap_limit: 8g
+
+    # The image is immutable at run time: a write outside Persistent data fails
+    # loudly instead of vanishing on the next Release.
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /run
+
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+      - CUDA_MODULE_LOADING=LAZY
+      - OMP_NUM_THREADS=1
+      - OPENBLAS_NUM_THREADS=1
+      - MKL_NUM_THREADS=1
+      - MALLOC_ARENA_MAX=2
+      # pyro's live-preview overlay (camera-6.pyro.json), mounted below.
+      - FLEET_OVERLAY_EXTRA_DIRS=/run/vision/overlay-pyro
+      # Dual Track's zone names on the live tab, with the backend's furnace names.
+      - FLEET_OVERLAY_ZONE_NAMES=F1 tapping=IF 06 tapping;F1 deslagging=IF 06 deslagging;F2 tapping=IF 05 tapping;F2 deslagging=IF 05 deslagging
+      # NOTE: DISPLAY intentionally unset — headless. Setting it without X auth
+      # crashes the GStreamer plugin scanner via EGL and poisons the registry cache.
+
+    # Operational flags come with the Release; secrets stay on the Device and
+    # never enter the registry. A missing secrets file stops the stage.
+    env_file:
+      - ${METALCLOUD_RELEASE}/config/site.env
+      - ${METALCLOUD_PERSISTENT}/secrets/mantri.env
+
+    volumes:
+      # Engines (checked against SHA256SUMS by the entrypoint) and site config.
+      - ${METALCLOUD_RELEASE}:/release:ro
+      # Everything the app writes.
+      - ${METALCLOUD_PERSISTENT}/database:/app/ai_vision/state
+      - ${METALCLOUD_PERSISTENT}/logs:/app/ai_vision/logs
+      - ${METALCLOUD_PERSISTENT}/output:/app/ai_vision/output
+      - ${METALCLOUD_PERSISTENT}/cache/gst-registry:/app/cache/gst-registry
+      - ${METALCLOUD_PERSISTENT}/cache/trt-compute:/root/.cache/riva/trt-engine-cache
+      # Written by the pyro service; only read here.
+      - ${METALCLOUD_PERSISTENT}/cache/overlay-pyro:/run/vision/overlay-pyro:ro
+
+    devices:
+      - /dev/nvmap:/dev/nvmap
+
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+
+    logging:
+      # json-file (not journald): journald silently received nothing during
+      # an overnight restart loop on a sibling deployment.
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+    healthcheck:
+      test: ["CMD", "/app/docker/healthcheck.sh"]
+      interval: 60s
+      timeout: 15s
+      start_period: 120s
+      # Check every 5 s while starting, so the activation gate passes as soon
+      # as the app is healthy instead of waiting for the first 60 s check.
+      start_interval: 5s
+      retries: 3
+
+  pyro:
+    image: ${METALCLOUD_IMAGE}
+    restart: unless-stopped
+    # Reads rtsp://localhost:8554/camera-6 (NVR channel 6, main stream, 20 fps).
+    depends_on:
+      mediamtx:
+        condition: service_healthy
+    runtime: nvidia
+    network_mode: host
+    ipc: host
+    cpuset: "1-5"
+    mem_limit: 1536m
+    memswap_limit: 2g
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /run
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+      - CUDA_MODULE_LOADING=LAZY
+      - MALLOC_ARENA_MAX=2
+    # Not /entrypoint.sh (that launches mantri_pipeline.py). The Engine is
+    # /release/engines/pyro.engine, built at stage; there is no ONNX to rebuild from.
+    # Every 4th frame of 20 fps = 5 fps; with no frame for 60 s the app exits and
+    # restart brings the RTSP source back.
+    entrypoint: ["/app/pyro/bin/deepstream_pyro"]
+    command:
+      - --input
+      - rtsp://localhost:8554/camera-6
+      - --zones
+      - /release/config/pyro_camera6_zone.json
+      - --infer-config
+      - /app/pyro/configs/config_infer_pyro_mantri.txt
+      - --csv
+      - /app/ai_vision/output/pyro/pyro_events.csv
+      - --headless
+      # Zone, boxes and dip state for camera-6 on the live tab.
+      - --overlay
+      - --drop-frame-interval
+      - "4"
+      - --fps
+      - "5"
+      - --events-socket
+      - /app/ai_vision/state/events.sock
+      - --events-outbox
+      - /app/ai_vision/state/pyro.outbox
+      - --events-stream-id
+      - "5"
+      - --events-module
+      - dual_track
+      # IF 06 (near) and IF 05 (far); IF 05 needs 0.60 to stay clear of a lit panel.
+      - --zone-furnace
+      - zone-1=Dual Track F1
+      - --zone-furnace
+      - zone-2=Dual Track F2
+      - --zone-confidence
+      - zone-2=0.60
+    volumes:
+      - ${METALCLOUD_RELEASE}:/release:ro
+      # events.sock and the durable outbox live with mantri-vision's state.
+      - ${METALCLOUD_PERSISTENT}/database:/app/ai_vision/state
+      - ${METALCLOUD_PERSISTENT}/output:/app/ai_vision/output
+      # Its own GStreamer registry cache, so the two containers never write one file.
+      - ${METALCLOUD_PERSISTENT}/cache/gst-registry-pyro:/app/cache/gst-registry
+      # Live-preview overlay (the writer's default dir); mantri-vision reads it.
+      - ${METALCLOUD_PERSISTENT}/cache/overlay-pyro:/run/vision/overlay
+    devices:
+      - /dev/nvmap:/dev/nvmap
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "3"
+    # The image's HEALTHCHECK is mantri-vision's; this one asks only that the pyro app
+    # is PID 1 and running. A stall exits (watchdog) and shows as a restart.
+    healthcheck:
+      test: ["CMD-SHELL", "grep -q deepstream_pyro /proc/1/cmdline"]
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      start_interval: 5s
+      retries: 3
+
+  mediamtx:
+    # bluenviron/mediamtx 1.20.1-ffmpeg, copied unchanged (same digest) into our registry;
+    # the version Mantri ran natively. -ffmpeg because the plain image has no shell,
+    # so nothing to run a healthcheck with. Rehearsed on Pashupathi 2026-09-25.
+    image: asia-south1-docker.pkg.dev/gen-lang-client-0603015471/edge/mediamtx:1.20.1-ffmpeg@sha256:16c56911dbd1fd7a85455042fa8320779fc8bf6575c6903f74023b202c1a620c
+    restart: unless-stopped
+    network_mode: host
+    # Camera credentials live in the config, so it stays on the Device, never in the registry.
+    volumes:
+      - type: bind
+        source: ${METALCLOUD_PERSISTENT}/secrets/mediamtx.yml
+        target: /mediamtx.yml
+        read_only: true
+        bind:
+          create_host_path: false
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "nc", "-z", "127.0.0.1", "8554"]
+      interval: 10s
+      timeout: 5s
+      start_period: 10s
+      retries: 3

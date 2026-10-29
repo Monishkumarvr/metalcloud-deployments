@@ -1,0 +1,136 @@
+# R-025 plus: Dual Track (camera-2) zones from the Release with IF 05 deslagging redrawn (user, 29 Oct); Dual Track zones shown as IF 06 / IF 05 on the live tab; same models and engines as R-025
+schema_version: 1
+release:
+  id: mantri-release-r-026
+  created_at: "2026-10-29T19:08:18+05:30"
+site:
+  id: mantri
+application:
+  repository:
+    name: Mantri_Metallics
+  git:
+    sha: 03b3c6da87a8b62d8934035ec47d62733f076d2f
+  container:
+    registry: asia-south1-docker.pkg.dev
+    repository: gen-lang-client-0603015471/edge/mantri-ai-vision
+    digest: sha256:4f7ed087d08b7cc1881af00b099cbbfcac5f503b615300128e97615e44c225f9
+    builder_profile:
+      artifact: builder-profiles/jetson-orin-r36.4.7.yaml
+      sha256: b6d8f4d3e41c0344b3d7ef1d8fd82d91e76777396847057e50e66617e2e391ec
+  compose:
+    artifact: sites/mantri/release-r26/compose.yaml
+    sha256: f4e3c5a47560b612e1316201fbea7aa637a6050ae31b057444837ad73236047b
+runtime:
+  profile: docker-jetson-v1
+  requirements:
+    l4t: '36.4'
+models:
+  dual_track:
+    model_id: dual_track
+    version: 1
+    artifact:
+      uri: models/mantri/dual_track_v1_736.onnx
+      sha256: 3ebc5d0b5edcc32f10b555bda4424357977e474bb39c38cbb075369a6d802420
+    precision: fp16
+    input_shape:
+    - 1
+    - 3
+    - 736
+    - 1280
+    parser:
+      path: /app/monotrack/libs/nvdsinfer_custom_impl_Yolo/libnvdsinfer_custom_impl_Yolo.so
+      sha256: 3af4e3dec93c9d6bfd6c305fd9584a956ff90ef091aa80d3bbf4698ee82ba9cf
+    engine:
+      builder: trtexec
+      args:
+      - --memPoolSize=workspace:2048
+  inoculation:
+    model_id: inoculation
+    version: 3
+    artifact:
+      uri: models/mantri/inoculation_v2_relu_736_nop4.onnx
+      sha256: ba004634debe1ef4577b7fa1a556202a7b64675dd5438d4847668d4a1ce9a012
+    precision: fp16
+    input_shape:
+    - 1
+    - 3
+    - 736
+    - 1280
+    parser:
+      path: /app/inoculation/libs/libnvdsinfer_custom_impl_Yolo.so
+      sha256: 6885b740bb87ab8069445ecb04279ab17badf05422a7913c090e80a8231e96d9
+    engine:
+      builder: trtexec
+      args:
+      - --memPoolSize=workspace:2048
+  monotrack:
+    model_id: best_monotrack_mantri
+    version: 1
+    artifact:
+      uri: models/mantri/best_monotrack_mantri_v1.onnx
+      sha256: 4b2434c7bc3bf194bff5853c75d2f25398b2a29bf651ca3875437f589057014a
+    precision: fp16
+    input_shape:
+    - 1
+    - 3
+    - 1280
+    - 1280
+    parser:
+      path: /app/monotrack/libs/nvdsinfer_custom_impl_Yolo/libnvdsinfer_custom_impl_Yolo.so
+      sha256: 3af4e3dec93c9d6bfd6c305fd9584a956ff90ef091aa80d3bbf4698ee82ba9cf
+    engine:
+      builder: trtexec
+      args:
+      - --memPoolSize=workspace:2048
+  pyro:
+    model_id: mantri_pyro
+    version: 3
+    artifact:
+      uri: models/mantri/mantri_pyro_v3_736.onnx
+      sha256: fe190ed1ca3abc39b1d11a0f493b1424a1fbfd5ec1e5a3c2e74c15a9dca54ac7
+    precision: fp16
+    input_shape:
+    - 1
+    - 3
+    - 736
+    - 1280
+    parser:
+      path: /app/inoculation/libs/libnvdsinfer_custom_impl_Yolo.so
+      sha256: 6885b740bb87ab8069445ecb04279ab17badf05422a7913c090e80a8231e96d9
+    engine:
+      builder: trtexec
+      args:
+      - --memPoolSize=workspace:2048
+configuration:
+  site:
+    artifact: sites/mantri/release-r19/site.env
+    sha256: 37e7644c95b85346b34164da8562abbcf06609936f6e8a6291bec2c8d1e39000
+  files:
+    dual_track_zones.json:
+      artifact: sites/mantri/release-r26/dual_track_zones.json
+      sha256: 7a55c3eb8259309551dc766485e61af11b65dc2b8e2f95e43bc492b9dbe91b25
+    monotrack_zone.json:
+      artifact: sites/mantri/release-r22/monotrack_zone.json
+      sha256: 1cafeb0dda589c64d45b08a19fb6515fc0ff176f4bb5e593c7685d8e7547bb43
+    pyro_camera6_zone.json:
+      artifact: sites/mantri/release-r25/pyro_camera6_zone.json
+      sha256: c689fc2a99185c094bb08622d687bc86f4b571997e78a236620bef76b105320d
+    pyro_f1_zone.json:
+      artifact: sites/mantri/release-r23/pyro_f1_zone.json
+      sha256: 88cad102c60ff69c7754d9c79ecc9243f9d6000c93b4fbb28f3285c9931e9157
+    spectro_run.json:
+      artifact: sites/mantri/release-r19/spectro_run.json
+      sha256: 232132a6c0aff9e9e4126d02d5b357ba8b2d777d5f13b91498de74bb33dbcddf
+deployment:
+  health_timeout_seconds: 300
+  rollback_on_health_failure: true
+  health:
+    required_services:
+    - mantri-vision
+    - pyro
+    - mediamtx
+  smoke:
+    argv:
+    - /app/docker/smoke.sh
+  replaces_units:
+  - mantri-mediamtx.service
