@@ -1,0 +1,65 @@
+# Pashupati Release 012: 2-class detector best_ladle_pyro_pashupati_v3 (YOLO11n; 0 ladle, 1 Pyro; rows ONNX, model key ladle v3) and the pyrometer module from Pashupati branch both_furnaces_pyro_training (Pyro box centre in Furnace_1/2_Pyro_Zone for 1 s = a reading, re-arms after 3 s; Pyro threshold 0.6), gated by melting. Tapping unchanged (class 0, ladle 0.25). AGNI heats post "pyrometer": true when a reading falls in the heat. Image from Pashupati@c31090a.
+schema_version: 1
+release:
+  id: pashupati-release-012
+  created_at: "2026-10-29T12:52:53+05:30"
+site:
+  id: pashupati
+application:
+  repository:
+    name: Pashupati
+  git:
+    sha: c31090ad6d7cdd3de3d2c04822895402dc39c02a
+  container:
+    registry: asia-south1-docker.pkg.dev
+    repository: gen-lang-client-0603015471/edge/pashupati-ai-vision
+    digest: sha256:94991a47b0f9f9bb95fd959325dca4628b15460f3aea3a6baa84ef9026c75450
+    builder_profile:
+      artifact: builder-profiles/jetson-orin-r36.4.7.yaml
+      sha256: b6d8f4d3e41c0344b3d7ef1d8fd82d91e76777396847057e50e66617e2e391ec
+  compose:
+    artifact: sites/pashupati/pashupati-release-001/compose.yaml
+    sha256: c9912024c06086d7df8d69ad93aa4f4131e1b66e976b72dfad313e0cd66059e4
+runtime:
+  profile: docker-jetson-v1
+  requirements:
+    l4t: '36.4'
+models:
+  ladle:
+    model_id: pashupati_ladle_v2
+    version: 3
+    artifact:
+      uri: models/pashupati/best_ladle_pyro_pashupati_v3__imgsz-1280x736__fp32__b1__rows__2cls.onnx
+      sha256: a917e3acd21088d75746e6da5f3aaaa60bd7e31c18744945cec14827f72754b1
+    precision: fp16
+    input_shape:
+    - 1
+    - 3
+    - 736
+    - 1280
+    parser:
+      path: /workspace/runtime/libs/libnvdsinfer_pashupati.so
+      sha256: a0aa15b3f234a3914398073e4fffea70810bc2c841f6176a7472bb2453a7ed13
+    engine:
+      builder: trtexec
+      args:
+      - --memPoolSize=workspace:2048
+configuration:
+  site:
+    artifact: sites/pashupati/pashupati-release-012/site.env
+    sha256: a14408147ed81bd682b64f7171f87fc4f4f695c3da959c86e0f15e077f5cce87
+  files:
+    agni_rebuild.json:
+      artifact: sites/pashupati/pashupati-release-007/agni_rebuild.json
+      sha256: 666762dd7089271d2443a9ae617c31270a69ceaf81805a16a50c9acb9c6fdba0
+deployment:
+  health_timeout_seconds: 300
+  rollback_on_health_failure: true
+  health:
+    required_services:
+    - pashupati-ch7
+    - pashupati-web
+    - pashupati-sync
+  smoke:
+    argv:
+    - /usr/local/bin/pashupati-smoke.sh
