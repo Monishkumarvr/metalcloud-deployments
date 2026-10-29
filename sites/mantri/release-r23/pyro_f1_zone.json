@@ -1,0 +1,33 @@
+{
+  "zones": {
+    "zone-1": [
+      [
+        32,
+        436
+      ],
+      [
+        678,
+        434
+      ],
+      [
+        678,
+        1106
+      ],
+      [
+        30,
+        1096
+      ]
+    ]
+  },
+  "frame_size": [
+    2560,
+    1440
+  ],
+  "labels": {
+    "zone-1": "Pyrometer Zone"
+  },
+  "source": {
+    "video": "SAFETY CAMERA - 00.00-01.00 24I26.mp4",
+    "timestamp_seconds": 2576.0
+  }
+}
