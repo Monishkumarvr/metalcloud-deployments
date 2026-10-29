@@ -1,0 +1,26 @@
+{
+  "zones": {
+    "zone-1": [
+      [32, 436],
+      [678, 434],
+      [678, 1106],
+      [30, 1096]
+    ],
+    "zone-2": [
+      [720, 30],
+      [1080, 30],
+      [1080, 236],
+      [720, 236]
+    ]
+  },
+  "frame_size": [2560, 1440],
+  "labels": {
+    "zone-1": "IF 06 Pyrometer",
+    "zone-2": "IF 05 Pyrometer"
+  },
+  "source": {
+    "camera": "camera-6 (NVR channel 6, Sefty Camera)",
+    "zone-1": "IF 06 (near furnace, Dual Track F1): drawn on SAFETY CAMERA - 00.00-01.00 24I26.mp4 at 42:50; live dips 2026-10-29 05:29 and 05:32 centred inside",
+    "zone-2": "IF 05 (far furnace, Dual Track F2): dip 2026-10-27 15:24:56-15:25:23 box centres x 398-495, y 55-102 at 1280x720, with margin; stops above the chute (night glare boxes at y >= 143)"
+  }
+}
