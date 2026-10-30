@@ -10,8 +10,9 @@
 det_thresh: 0.05
 # Below every nvinfer pre-cluster-threshold (helmet 0.10), so the tracker never discards evidence.
 
-max_age: 375
-# 30 s at 12.5 fps (release 004: 51 frames at 1.7 fps). The PPE logic only uses fresh helmet
+max_age: 1500
+# 120 s at 12.5 fps, matching the 120 s incident window (release 004: 51 frames ~30 s at 1.7 fps).
+# A person lost for up to 2 min keeps their ID. The PPE logic only uses fresh helmet
 # detections, never helmet track IDs, so helmet age has no effect on decisions.
 
 min_hits: 1
