@@ -1,19 +1,19 @@
-# 004 + Nano model safety_nano_nipha_v1 (YOLO26n, 1280x736 FP16, 16 ms) at 12.5 fps; timers back to spec 10/1/10; helmet veto >= 0.20 over the whole 10 s window, evidence 0.30, detector helmet 0.10; OC-SORT max_age 1500 (120 s) / iou 0.3 / delta_t 3. F56 replay (max_age 375): 0 false, 1 real, 1 veto.
+# 004 + Nano model safety_nano_nipha_v1 (YOLO26n, 1280x736 FP16, 16 ms) at 12.5 fps; app ffe5391: a vetoed onset opens a silent incident, so the same person stays vetoed for 120 s across track drops; timers back to spec 10/1/10; helmet veto >= 0.20 over the whole 10 s window, evidence 0.30, detector helmet 0.10; OC-SORT max_age 1500 (120 s) / iou 0.3 / delta_t 3. F56 replay (max_age 1500): 0 false, 1 real, 1 veto.
 schema_version: 1
 release:
   id: nipha-safety-release-005
-  created_at: "2026-10-30T16:23:46+05:30"
+  created_at: "2026-10-30T17:46:39+05:30"
 site:
   id: nipha-safety
 application:
   repository:
     name: nipha4_jetson_ai_vision
   git:
-    sha: 09cf4e0354e59cfd6216e4518bd93e464b0a9e8d
+    sha: ffe53914444140cc65302d703547d22dbecf2f90
   container:
     registry: asia-south1-docker.pkg.dev
     repository: gen-lang-client-0603015471/edge/nipha-safety-ai-vision
-    digest: sha256:55320b6b59779f93cdf241cbb5e2cc62c888391595e2092401077cd68ffa3a68
+    digest: sha256:110d2294d699a093bcfd52e324d2dc415aa4bef6e33a2032d263cb54a72dd61a
     builder_profile:
       artifact: builder-profiles/jetson-orin-r36.4.7.yaml
       sha256: b6d8f4d3e41c0344b3d7ef1d8fd82d91e76777396847057e50e66617e2e391ec
