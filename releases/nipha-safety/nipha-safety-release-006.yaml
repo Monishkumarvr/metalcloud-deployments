@@ -1,0 +1,77 @@
+# 005 (Nano safety_nano_nipha_v1 at 12.5 fps, app ffe5391) with release 004's PPE settings, chosen by the user: detector helmet 0.15, helmet evidence 0.35, veto >= 0.15 within 5 s, timers 15/0/30 s, person gate and incident merge unchanged; OC-SORT as 004 in seconds at 12.5 fps (max_age 375 = 30 s, delta_t 15 = 1.2 s, iou 0.2, det_thresh 0.10).
+schema_version: 1
+release:
+  id: nipha-safety-release-006
+  created_at: "2026-10-30T19:19:43+05:30"
+site:
+  id: nipha-safety
+application:
+  repository:
+    name: nipha4_jetson_ai_vision
+  git:
+    sha: ffe53914444140cc65302d703547d22dbecf2f90
+  container:
+    registry: asia-south1-docker.pkg.dev
+    repository: gen-lang-client-0603015471/edge/nipha-safety-ai-vision
+    digest: sha256:110d2294d699a093bcfd52e324d2dc415aa4bef6e33a2032d263cb54a72dd61a
+    builder_profile:
+      artifact: builder-profiles/jetson-orin-r36.4.7.yaml
+      sha256: b6d8f4d3e41c0344b3d7ef1d8fd82d91e76777396847057e50e66617e2e391ec
+  compose:
+    artifact: sites/nipha-safety/nipha-safety-release-001/compose.yaml
+    sha256: c5f500ae88c41c867515bc1969c068e57992377c4c30f7c884dfb424aa7b985a
+runtime:
+  profile: docker-jetson-v1
+  requirements:
+    l4t: '36.4'
+models:
+  ppe:
+    model_id: safety_nano_nipha_v1_736x1280
+    version: 1
+    artifact:
+      uri: models/nipha-safety/safety_nano_v1_736x1280.onnx
+      sha256: 2ac25ee3c05015ca5bad8af22239de590d3d89d41188ec8d87fe51a16af49848
+    precision: fp16
+    input_shape:
+    - 1
+    - 3
+    - 736
+    - 1280
+    parser:
+      path: /app/libs/libnvdsinfer_custom_impl_Yolo.so
+      sha256: c596ea8654258ab62cdcf27fcc34ff82b905994416b9d5fa9b6cba30b4651a8b
+    engine:
+      builder: trtexec
+      args:
+      - --memPoolSize=workspace:2048
+configuration:
+  site:
+    artifact: sites/nipha-safety/nipha-safety-release-006/site.env
+    sha256: 8434fdb2c627e5ef943d80aba9631f7075bc6c82eebfe549dfb9daf5c97f7ef0
+  files:
+    tracker_ocsort.yml:
+      artifact: sites/nipha-safety/nipha-safety-release-006/config/tracker_ocsort.yml
+      sha256: e94b601663b787ea5644ad4cdcf6e40aa82d15bb50ca6659d10fa443482701a2
+    zones_F12.json:
+      artifact: sites/nipha-safety/nipha-safety-release-002/config/zones_F12.json
+      sha256: b065bdde369bd705e90b1235c7ce0a0ef33fc9baacf6ca6c5c2d4625202850b1
+    zones_F34.json:
+      artifact: sites/nipha-safety/nipha-safety-release-002/config/zones_F34.json
+      sha256: 62816d301991bb32677b519bd1400c200dfa7e333daffc8451d51083943f63ca
+    zones_F56.json:
+      artifact: sites/nipha-safety/nipha-safety-release-002/config/zones_F56.json
+      sha256: d714d72b17858589846ab146e34b887a5da7bbbbafd5cc0b74a4fbfef046eb32
+deployment:
+  health_timeout_seconds: 480
+  rollback_on_health_failure: true
+  health:
+    required_services:
+    - mediamtx
+    - safety-f12
+    - safety-f34
+    - safety-f56
+    - safety-sync
+    - safety-web
+  smoke:
+    argv:
+    - /app/docker/smoke.sh
